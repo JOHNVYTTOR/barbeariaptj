@@ -1,0 +1,101 @@
+/* 1. Importação das fontes 'Bebas Neue' para títulos e 'Montserrat' para textos */
+@import url('https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Montserrat:wght@400;500;700&display=swap');
+
+/* 2. Diretivas base do Tailwind CSS */
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* 3. Definição das variáveis de cores e estilos do seu tema */
+@layer base {
+  :root {
+    --background: 220 13% 13%;
+    --foreground: 210 40% 98%;
+    --card: 220 13% 16%;
+    --card-foreground: 210 40% 98%;
+    --popover: 220 13% 16%;
+    --popover-foreground: 210 40% 98%;
+    --primary: 45 100% 50%;
+    --primary-foreground: 220 13% 13%;
+    --secondary: 220 13% 20%;
+    --secondary-foreground: 210 40% 98%;
+    --muted: 220 13% 20%;
+    --muted-foreground: 215 20.2% 65.1%;
+    --accent: 45 100% 50%;
+    --accent-foreground: 220 13% 13%;
+    --destructive: 0 84.2% 60.2%;
+    --destructive-foreground: 210 40% 98%;
+    --border: 220 13% 25%;
+    --input: 220 13% 20%;
+    --ring: 45 100% 50%;
+    --radius: 0.5rem;
+
+    /* Cores customizadas da barbearia */
+    --gold: 45 100% 50%;
+    --gold-dark: 45 100% 40%;
+    --dark-bg: 220 13% 13%;
+    --dark-card: 220 13% 16%;
+    --dark-border: 220 13% 25%;
+    
+    /* Gradientes */
+    --gradient-gold: linear-gradient(135deg, hsl(45 100% 50%), hsl(45 100% 40%));
+    --gradient-dark: linear-gradient(135deg, hsl(220 13% 16%), hsl(220 13% 13%));
+    
+    /* Sombras */
+    --shadow-gold: 0 10px 30px -10px hsl(45 100% 50% / 0.3);
+    --shadow-dark: 0 10px 30px -10px hsl(220 13% 13% / 0.5);
+  }
+}
+
+/* 4. Estilos base para o corpo da página */
+@layer base {
+  * {
+    @apply border-border;
+  }
+  body {
+    @apply bg-background text-foreground;
+    font-family: 'Montserrat', sans-serif; /* Define a fonte padrão */
+  }
+}
+
+/* 5. Animações para os pop-ups (Toasts) */
+@keyframes toast-in {
+  from {
+    transform: translateX(100%) scale(0.9);
+    opacity: 0;
+  }
+  to {
+    transform: translateX(0) scale(1);
+    opacity: 1;
+  }
+}
+
+@keyframes toast-out {
+  from {
+    transform: translateX(0) scale(1);
+    opacity: 1;
+  }
+  to {
+    transform: translateX(100%) scale(0.9);
+    opacity: 0;
+  }
+}
+
+/* 6. Estilização da barra de rolagem para tema escuro */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: hsl(var(--card));
+}
+
+::-webkit-scrollbar-thumb {
+  background: hsl(var(--border));
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: hsl(var(--muted-foreground));
+}

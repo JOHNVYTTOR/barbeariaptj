@@ -1,0 +1,70 @@
+/* Removemos todos os estilos do #root para permitir um layout de tela cheia */
+#root {
+  /* Estilos como max-width, margin e padding foram removidos daqui. */
+}
+
+.logo {
+  height: 6em;
+  padding: 1.5em;
+  will-change: filter;
+  transition: filter 300ms;
+}
+
+
+.logo:hover {
+  filter: drop-shadow(0 0 2em #646cffaa);
+}
+.logo.react:hover {
+  filter: drop-shadow(0 0 2em #61dafbaa);
+}
+
+@keyframes logo-spin {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  a:nth-of-type(2) .logo {
+    animation: logo-spin infinite 20s linear;
+  }
+}
+
+.card {
+  padding: 2em;
+}
+
+.read-the-docs {
+  color: #888;
+}
+
+.to-card\/30 {
+    --tw-gradient-to: hsl(var(--card) / 0.3) var(--tw-gradient-to-position);
+}
+
+.to-card\/70 {
+    --tw-gradient-to: hsl(var(--card) / 0.3) var(--tw-gradient-to-position);
+}
+
+@layer components {
+  /* Slider animations */
+  .slider-container {
+    animation: slide-infinite 20s linear infinite;
+  }
+  
+  .slider-container:hover {
+    animation-play-state: paused;
+  }
+  
+  .diploma-card {
+    transition: all 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+  
+  .diploma-card:hover {
+    transform: scale(1.1) translateY(-8px);
+    box-shadow: 0 20px 40px -15px hsl(45 100% 50% / 0.4);
+  }
+}
