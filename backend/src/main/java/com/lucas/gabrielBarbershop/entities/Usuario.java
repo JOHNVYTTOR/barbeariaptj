@@ -1,0 +1,101 @@
+package com.lucas.gabrielBarbershop.entities;
+
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+
+import jakarta.persistence.Column;
+import jakarta.persistence.Entity;
+import jakarta.persistence.GeneratedValue;
+import jakarta.persistence.GenerationType;
+import jakarta.persistence.Id;
+import jakarta.persistence.JoinColumn;
+import jakarta.persistence.ManyToOne;
+import jakarta.persistence.Table;
+
+@Entity
+@Table(name = "tb_clientes")
+public class Usuario {
+	
+	@Id
+	@GeneratedValue(strategy = GenerationType.IDENTITY)
+	@Column(name = "idUsuario", nullable = false)
+	private Long idUsuario;
+	
+	@Column(name = "nomeUsuario", nullable = false, length = 100)
+	private String nome;
+	
+	@Column(name = "cpf", nullable = false, unique = true, length = 11)
+	private int cpf;
+	
+	@Column(name = "email", nullable = false, length = 50, unique = true)
+	private String email;
+	
+	@Column(name = "senha", nullable = false, length = 255)
+	private String senha;
+	
+	@ManyToOne
+	@JoinColumn(name = "tipo_usuario_id", nullable = false)
+	@JsonIgnoreProperties("usuarios")
+	private TipoUsuario tipoUsuario;
+
+	public Usuario(Long idUsuario, String nome, int cpf, String email, String senha, TipoUsuario tipoUsuario) {
+		super();
+		this.idUsuario = idUsuario;
+		this.nome = nome;
+		this.cpf = cpf;
+		this.email = email;
+		this.senha = senha;
+		this.tipoUsuario = tipoUsuario;
+	}
+	
+	public Usuario() {
+		
+	}
+
+	public Long getIdUsuario() {
+		return idUsuario;
+	}
+
+	public void setIdUsuario(Long idUsuario) {
+		this.idUsuario = idUsuario;
+	}
+
+	public String getNome() {
+		return nome;
+	}
+
+	public void setNome(String nome) {
+		this.nome = nome;
+	}
+
+	public int getCpf() {
+		return cpf;
+	}
+
+	public void setCpf(int cpf) {
+		this.cpf = cpf;
+	}
+
+	public String getEmail() {
+		return email;
+	}
+
+	public void setEmail(String email) {
+		this.email = email;
+	}
+
+	public String getSenha() {
+		return senha;
+	}
+
+	public void setSenha(String senha) {
+		this.senha = senha;
+	}
+
+	public TipoUsuario getTipoUsuario() {
+		return tipoUsuario;
+	}
+
+	public void setTipoUsuario(TipoUsuario tipoUsuario) {
+		this.tipoUsuario = tipoUsuario;
+	}
+}
