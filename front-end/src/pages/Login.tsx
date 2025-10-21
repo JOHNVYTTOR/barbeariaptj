@@ -6,6 +6,9 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Link, useNavigate } from "react-router-dom";
 import { toast } from "sonner"; // Importa o toast do Sonner
 import { Home } from "lucide-react"; // ATENÇÃO: Trocado ArrowLeft por Home
+import { useAuth } from "@/hooks/useAuth";
+import api from '../api.ts'
+import { AxiosError } from "axios";
 
 import logoBlur from "@/assets/logo-blur-bg.png";
 import logoImage from "@/assets/logo.png";
@@ -13,44 +16,50 @@ import logoImage from "@/assets/logo.png";
 const Login = () => {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const navigate = useNavigate();
+  const [loading, setLoading] = useState(false);
+  const { login } = useAuth();
 
   const handleLogin = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!email || !password) {
-      toast.error("Campos obrigatórios", { 
-        description: "Por favor, preencha todos os campos.", 
-      });
-      return;
-    }
+e.preventDefault();
+if (!email || !password) {
+toast.error("Erro no Login", { description: "Por favor, preencha todos os campos." });
+return;
+}
 
-    try {
-      const response = await fetch('http://localhost:5000/api/auth/login', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email, password })
-      });
-      const data = await response.json();
+setLoading(true);
 
-      if (!response.ok) {
-        throw new Error(data.message);
-      }
+try {
+// 4. Usar api.post ao invés de fetch
+const response = await api.post('/auth/login', {
+email,
+password
+});
 
-      toast.success("Login realizado com sucesso!", { 
-        description: `Bem-vindo de volta, ${data.name}.` 
-      });
+// 5. Chamar a função login do context
+// O response.data já é o JSON (ex: { token: "...", user: {...} })
+login(response.data);
 
-      if (data.role === 'barber') {
-        navigate("/dashboard");
-      } else {
-        navigate("/");
-      }
-    } catch (error: any) {
-      toast.error("Erro no Login", { 
-        description: error.message, 
-      });
-    }
-  };
+// O toast de sucesso e o redirecionamento agora são feitos DENTRO da função login()
+
+} catch (error) {
+// O interceptor já lida com 401 e erros de rede
+// Este catch lida com outros erros (ex: 400 Bad Request)
+if (error instanceof AxiosError && error.response) {
+// Usa a mensagem de erro do backend (ex: "E-mail ou senha inválidos.")
+// Note: O interceptor de 401 pode já ter lidado com isso
+if (error.response.status !== 401) {
+toast.error("Erro no Login", {
+description: error.response.data.message || "E-mail ou senha inválidos.",
+});
+}
+} else if (error instanceof Error) {
+// Caso não seja um erro do axios
+toast.error("Erro no Login", { description: error.message });
+}
+} finally {
+setLoading(false);
+}
+};
 
   return (
     <div 
@@ -117,8 +126,9 @@ const Login = () => {
             <Button 
               type="submit" 
               className="w-full bg-yellow-400 hover:bg-yellow-500 text-black font-semibold shadow-md hover:shadow-yellow-400/40 transition-all"
+              disabled={loading}
             >
-              Entrar
+              {loading ? "Entrando..." : "Entrar"}
             </Button>
           </form>
           
