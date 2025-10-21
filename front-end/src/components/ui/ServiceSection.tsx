@@ -1,10 +1,10 @@
 import React, { useState } from 'react';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import barberImage from '@/assets/barber-service.jpg';
-import haircutImage from '@/assets/haircut-service.jpg';
-import completeImage from '@/assets/complete-service.jpg';
-import mustacheImage from '@/assets/mustache-service.jpg';
+import barberImage from '@/assets/tudo_img.jpg';
+import haircutImage from '@/assets/cimento.jpg';
+import completeImage from '@/assets/fotoCorte.jpg';
+import mustacheImage from '@/assets/gabriel.png';
 
 interface Service {
   id: number;

@@ -30,7 +30,7 @@ setLoading(true);
 
 try {
 // 4. Usar api.post ao invés de fetch
-const response = await api.post('/auth/login', {
+const response = await api.post('/usuarios/login', {
 email,
 password
 });

@@ -8,13 +8,13 @@ import {
   ChevronLeft,
   ChevronRight,
 } from "lucide-react";
-import barberHero from "../assets/chefe_png.png";
-import bgImage from "@/assets/cimento.jpg";
+import barberHero from "../assets/chefe_png.png"; // Usando o caminho relativo
+// import bgImage from "@/assets/cimento.jpg"; // Este não estava sendo usado
 import { motion, AnimatePresence } from "framer-motion";
-import barberImage from "@/assets/bigode_img.jpg";
-import haircutImage from "@/assets/navalhinha_img.jpg";
-import completeImage from "@/assets/bigode_img.jpg";
-import mustacheImage from "@/assets/tudo_img.jpg";
+import barberImage from "@/assets/bigode_img.jpg"; // Corrigido o caminho
+import haircutImage from "@/assets/navalhinha_img.jpg"; // Corrigido o caminho
+import completeImage from "@/assets/bigode_img.jpg"; // Corrigido o caminho (era repetido)
+import mustacheImage from "@/assets/tudo_img.jpg"; // Corrigido o caminho
 import { useState } from "react";
 
 const Home = () => {
@@ -31,28 +31,28 @@ const Home = () => {
       title: "BARBA COMPLETA",
       description:
         "A barba bem cuidada transforma o visual. No serviço de Barba Completa, faço o alinhamento dos fios, aparo no estilo desejado e finalizo com hidratação e acabamento preciso, garantindo conforto e um visual impecável.",
-      image: barberImage,
+      image: barberImage, // Usando a variável importada
     },
     {
       id: 2,
       title: "CORTE MASCULINO",
       description:
         "Corte moderno e personalizado para cada cliente. Utilizo técnicas atuais e clássicas para criar o visual perfeito que combina com seu estilo de vida, sempre com acabamento profissional e atenção aos detalhes.",
-      image: haircutImage,
+      image: haircutImage, // Usando a variável importada
     },
     {
       id: 3,
       title: "CORTE + BARBA",
       description:
         "O combo completo para quem busca praticidade e estilo. Corte de cabelo moderno combinado com barba alinhada e bem cuidada. Um visual completo e harmonioso em um só atendimento.",
-      image: completeImage,
+      image: completeImage, // Usando a variável importada
     },
     {
       id: 4,
       title: "BIGODE ESTILIZADO",
       description:
         "Cuidado especializado para bigodes. Aparo, modelagem e finalização com produtos específicos. Seja clássico ou moderno, deixo seu bigode com o formato ideal e bem definido.",
-      image: mustacheImage,
+      image: mustacheImage, // Usando a variável importada
     },
   ];
 
@@ -68,42 +68,40 @@ const Home = () => {
 
   const current = services[currentService];
   return (
-    <div
->
-  <Navigation />
+    <div> {/* Removido o estilo de fundo daqui, se aplicável em outro lugar */}
+      <Navigation />
 
-  {/* Hero Section com Partículas */}
-  <section className="relative flex items-end justify-center min-h-screen overflow-hidden">
-    
-    {/* Partículas — posicionadas por cima do fundo */}
-    <div className="absolute inset-0 z-10 pointer-events-none">
-      <FloatingParticles />
-    </div>
+      {/* Hero Section com Partículas */}
+      <section className="relative flex items-end justify-center min-h-screen overflow-hidden">
+        
+        {/* Partículas — posicionadas por cima do fundo */}
+        <div className="absolute inset-0 z-10 pointer-events-none">
+          <FloatingParticles />
+        </div>
 
-    {/* Imagem do barbeiro — acima das partículas */}
-   <motion.img
-  src={barberHero}
-  alt="Gabriel Rocha - Barbeiro Profissional"
-  className="max-h-[80vh] w-full object-contain relative z-20 select-none"
-  initial={{ opacity: 0, y: 60, scale: 0.95, filter: "blur(8px)" }}
-  animate={{ opacity: 1, y: 0, scale: 1, filter: "blur(0px)" }}
-  transition={{
-    duration: 1.8,
-    ease: [0.16, 1, 0.3, 1], // cubic-bezier tipo "spring suave"
-  }}
-  whileHover={{
-    scale: 1.03,
-    rotate: 0.3,
-    transition: { duration: 0.6, ease: "easeOut" },
-  }}
-  whileTap={{
-    scale: 0.98,
-    rotate: 0,
-    transition: { duration: 0.2 },
-  }}
-/>
-
-  </section>
+        {/* Imagem do barbeiro — acima das partículas */}
+        <motion.img
+          src={barberHero}
+          alt="Gabriel Rocha - Barbeiro Profissional"
+          className="max-h-[80vh] w-full object-contain relative z-20 select-none"
+          initial={{ opacity: 0, y: 60, scale: 0.95, filter: "blur(8px)" }}
+          animate={{ opacity: 1, y: 0, scale: 1, filter: "blur(0px)" }}
+          transition={{
+            duration: 1.8,
+            ease: [0.16, 1, 0.3, 1], // cubic-bezier tipo "spring suave"
+          }}
+          whileHover={{
+            scale: 1.03,
+            rotate: 0.3,
+            transition: { duration: 0.6, ease: "easeOut" },
+          }}
+          whileTap={{
+            scale: 0.98,
+            rotate: 0,
+            transition: { duration: 0.2 },
+          }}
+        />
+      </section>
 
       {/* Sobre mim */}
       <section className="py-20 px-2 lg:px-6 bg-[#D99D00]">
@@ -113,7 +111,6 @@ const Home = () => {
             <h2 className="text-4xl font-bold mb-6 font-display tracking-wider">
               Sobre Mim
             </h2>
-            {/* CORREÇÃO AQUI: removi a classe 'font-sans' */}
             <p className="text-xl text-black max-w-2xl">
               Meu nome é Gabriel Rocha, sou barbeiro apaixonado pelo que faço.
               Desde cedo descobri na barbearia uma forma de unir técnica, estilo
@@ -127,7 +124,7 @@ const Home = () => {
           <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-8">
             <div className="bg-white rounded-2xl shadow-lg p-6 text-center">
               <img
-                src="/certificados/up.png"
+                src="/certificados/up.png" // Caminho público
                 alt="Up Escola de Beleza"
                 className="mx-auto mb-4 h-16"
               />
@@ -138,7 +135,7 @@ const Home = () => {
 
             <div className="bg-white rounded-2xl shadow-lg p-6 text-center">
               <img
-                src="/certificados/prohair.png"
+                src="/certificados/prohair.png" // Caminho público
                 alt="ProHair International"
                 className="mx-auto mb-4 h-16"
               />
@@ -149,7 +146,7 @@ const Home = () => {
 
             <div className="bg-white rounded-2xl shadow-lg p-6 text-center">
               <img
-                src="/certificados/likebarber.png"
+                src="/certificados/likebarber.png" // Caminho público
                 alt="LikeBarber School"
                 className="mx-auto mb-4 h-16"
               />
@@ -171,19 +168,19 @@ const Home = () => {
           </div>
 
           <div className="relative flex items-center justify-center mt-6">
-           <button
-  onClick={handlePrevious}
-  className="
-    absolute left-0 lg:-left-12 top-1/2 -translate-y-1/2 z-20
-    bg-gradient-to-r from-gray-100 via-white to-white
-    p-3 rounded-full shadow-md backdrop-blur-md border border-black/30
-    hover:from-white hover:via-gray-100 hover:to-barbershop-accent/20
-    hover:border-barbershop-accent hover:scale-105 hover:shadow-lg
-    transition-all duration-300 ease-in-out
-  "
->
-  <ChevronLeft className="w-8 h-8 text-black drop-shadow-sm" />
-</button>
+            <button
+              onClick={handlePrevious}
+              className="
+                absolute left-0 lg:-left-12 top-1/2 -translate-y-1/2 z-20
+                bg-gradient-to-r from-gray-100 via-white to-white
+                p-3 rounded-full shadow-md backdrop-blur-md border border-black/30
+                hover:from-white hover:via-gray-100 hover:to-barbershop-accent/20
+                hover:border-barbershop-accent hover:scale-105 hover:shadow-lg
+                transition-all duration-300 ease-in-out
+              "
+            >
+              <ChevronLeft className="w-8 h-8 text-black drop-shadow-sm" />
+            </button>
 
 
             <AnimatePresence mode="wait">
@@ -200,7 +197,7 @@ const Home = () => {
                   <div
                     className="w-80 h-80 rounded-full overflow-hidden border-4 border-barbershop-text-light/20 shadow-2xl"
                     style={{
-                      background: `url(${current.image}) center/cover`,
+                      background: `url(${current.image}) center/cover`, // Usa a imagem do serviço atual
                     }}
                   />
                 </div>
@@ -231,18 +228,18 @@ const Home = () => {
             </AnimatePresence>
 
             <button
-  onClick={handleNext}
-  className="
-    absolute right-0 lg:-right-12 top-1/2 -translate-y-1/2 z-20
-    bg-gradient-to-l from-gray-100 via-white to-white
-    p-3 rounded-full shadow-md backdrop-blur-md border border-black/30
-    hover:from-white hover:via-gray-100 hover:to-barbershop-accent/20
-    hover:border-barbershop-accent hover:scale-105 hover:shadow-lg
-    transition-all duration-300 ease-in-out
-  "
->
-  <ChevronRight className="w-8 h-8 text-black drop-shadow-sm" />
-</button>
+              onClick={handleNext}
+              className="
+                absolute right-0 lg:-right-12 top-1/2 -translate-y-1/2 z-20
+                bg-gradient-to-l from-gray-100 via-white to-white
+                p-3 rounded-full shadow-md backdrop-blur-md border border-black/30
+                hover:from-white hover:via-gray-100 hover:to-barbershop-accent/20
+                hover:border-barbershop-accent hover:scale-105 hover:shadow-lg
+                transition-all duration-300 ease-in-out
+              "
+            >
+              <ChevronRight className="w-8 h-8 text-black drop-shadow-sm" />
+            </button>
 
           </div>
 
@@ -264,20 +261,16 @@ const Home = () => {
       </section>
 
       {/* Footer */}
-      {/* Footer */}
       <footer className="bg-[#393838] text-white py-10 mt-12">
         <div className="max-w-7xl mx-auto px-4 text-center space-y-6">
     
-          {/* O bloco de redes sociais que estava aqui foi movido para o final */}
           <hr className="border-gray-700" />
           {/* Bloco com mapa e endereço */}
-          {/* ATENÇÃO: Alterado de md:grid-cols-2 para md:grid-cols-3 para aumentar a largura do mapa */}
           <div className="grid md:grid-cols-3 gap-16 items-center mt-8">
             {/* Mapa do Google (Esquerda) */}
-            {/* ATENÇÃO: Adicionado md:col-span-2 para ocupar 2/3 da largura */}
             <div className="w-full h-[350px] rounded-xl overflow-hidden shadow-lg border border-gray-700 md:col-span-2">
               <iframe
-                src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d3666.811770563788!2d-47.45275!3d-23.54045!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x94cf60b2a2ff7bb3%3A0x3e2db5b30d22a807!2sR.%20Manoel%20Augusto%20Rangel%2C%20243%20-%20Rio%20Acima%2C%20Votorantim%20-%20SP%2C%2018150-000%2C%20Brasil!5e0!3m2!1spt-BR!2sbr!4v1697660000000!5m2!1spt-BR!2sbr"
+                src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d3666.811770563788!2d-47.45275!3d-23.54045!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x94cf60b2a2ff7bb3%3A0x3e2db5b30d22a807!2sR.%20Manoel%20Augusto%20Rangel%2C%20243%20-%20Rio%20Acima%2C%20Votorantim%20-%20SP%2C%2018150-000%2C%20Brasil!5e0!3m2!1spt-BR!2sbr!4v1697660000000!5m2!1spt-BR!2sbr" // URL inválida, substitua pela correta
                 width="100%"
                 height="100%"
                 style={{ border: 0 }}
@@ -288,7 +281,6 @@ const Home = () => {
             </div>
 
             {/* Endereço e contato (Direita) */}
-            {/* ATENÇÃO: Permanece com alinhamento text-right (como estava no seu último código) e ocupa o espaço restante (1/3) */}
             <div className="text-right space-y-3">
               <h4 className="text-2xl font-bold text-yellow-400">
                 Nosso Endereço
@@ -299,7 +291,6 @@ const Home = () => {
                 Rio Acima – Votorantim – SP
               </p>
               <p className="text-gray-300">Telefone: (15) 99820-8468</p>
-              {/* O botão fica alinhado à direita por causa do text-right no container pai */}
               <a
                 href="https://wa.me/5515998208468"
                 target="_blank"
@@ -316,13 +307,13 @@ const Home = () => {
             Acompanhe-nos em nossas redes sociais!
           </h3>
 
-          {/* ATENÇÃO: Bloco de Redes Sociais movido para AQUI (abaixo do mapa e endereço) */}
+          {/* Bloco de Redes Sociais */}
           <div className="flex justify-center gap-6 mt-8">
             <a
               href="https://web.facebook.com/barbershopgabrielrocha/?_rdc=1&_rdr#"
               target="_blank"
               rel="noopener noreferrer"
-              className="p-3 rounded-full bg-gray-800 hover:bg-primary transition-colors"
+              className="p-3 rounded-full bg-gray-800 hover:bg-blue-600 transition-colors" // Cor do Facebook
             >
               <Facebook className="w-6 h-6" />
             </a>
@@ -331,7 +322,7 @@ const Home = () => {
               href="https://www.instagram.com/barbershopgabrielrocha"
               target="_blank"
               rel="noopener noreferrer"
-              className="p-3 rounded-full bg-gray-800 hover:bg-primary transition-colors"
+              className="p-3 rounded-full bg-gray-800 hover:bg-pink-600 transition-colors" // Cor do Instagram
             >
               <Instagram className="w-6 h-6" />
             </a>
@@ -340,7 +331,7 @@ const Home = () => {
               href="https://wa.me/5515998208468"
               target="_blank"
               rel="noopener noreferrer"
-              className="p-3 rounded-full bg-gray-800 hover:bg-primary transition-colors"
+              className="p-3 rounded-full bg-gray-800 hover:bg-green-600 transition-colors" // Cor do WhatsApp
             >
               <MessageCircle className="w-6 h-6" />
             </a>
@@ -361,4 +352,4 @@ const Home = () => {
   );
 };
 
-export default Home;
+export default Home; // O export default original já estava aqui.

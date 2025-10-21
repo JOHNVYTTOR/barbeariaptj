@@ -1,86 +1,53 @@
-import React from "react";
-import { Navigation } from "@/components/ui/navigation";
-import { Button } from "@/components/ui/button";
-import barberHero from "@/assets/gabriel.png";
+// Local: front-end/src/pages/Sobre.tsx
+
+import React from 'react';
+import { Navigation } from "@/components/ui/navigation"; 
+import gabrielImg from "@/assets/gabriel.png"; // Exemplo de import de imagem
 
 const Sobre = () => {
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-900 via-gray-900 to-gray-800 text-gray-200 flex flex-col">
+    <div className="min-h-screen bg-gray-900 text-gray-100">
       <Navigation />
+      
+      <div className="max-w-4xl mx-auto px-4 py-12 pt-32">
+        <div className="text-center mb-12">
+          <h1 className="text-4xl font-bold mb-4">
+            <span className="text-yellow-400">Sobre</span> Nós
+          </h1>
+          <p className="text-xl text-gray-400">
+            Conheça a história da Gabriel Rocha Barbearia.
+          </p>
+        </div>
 
-      {/* Centraliza o conteúdo verticalmente */}
-      <main className="flex flex-1 items-center justify-center px-6 py-16">
-        <div className="max-w-6xl w-full grid grid-cols-1 md:grid-cols-2 gap-16 items-center">
-          {/* Texto à esquerda */}
-          <div className="flex flex-col justify-center text-center md:text-left space-y-6">
-            <h1 className="text-5xl font-bold text-yellow-400 tracking-tight">
-              Sobre mim
-            </h1>
-
-            <p className="text-lg leading-relaxed text-gray-200">
-              Olá! Sou <span className="font-semibold text-yellow-400">Gabriel Rocha</span>, 
-              barbeiro profissional apaixonado por estilo, precisão e autenticidade. 
-              Há mais de 5 anos dedico-me a criar visuais únicos que combinam técnica 
-              moderna com um toque clássico, ajudando meus clientes a expressarem 
-              confiança e personalidade.
+        <div className="grid md:grid-cols-2 gap-12 items-center">
+          <div className="space-y-6 text-gray-300">
+            <p className="text-lg leading-relaxed">
+              Bem-vindo à Gabriel Rocha Barbearia, onde a tradição encontra o estilo moderno. 
+              Nossa missão é oferecer mais do que apenas um corte de cabelo; é proporcionar uma 
+              experiência completa de cuidado masculino.
             </p>
-
-            <p className="text-lg leading-relaxed text-gray-200">
-              Acredito que uma barbearia é mais do que um lugar para cortar o cabelo —
-              é um espaço de conexão, identidade e renovação. 
-              Cada atendimento é uma experiência pensada nos detalhes, 
-              para que cada cliente saia daqui se sentindo melhor do que entrou.
+            <p className="leading-relaxed">
+              Fundada por Gabriel Rocha, um apaixonado pela arte da barbearia com mais de 10 anos 
+              de experiência, nossa barbearia se dedica a preservar as técnicas clássicas 
+              enquanto inova com as últimas tendências.
             </p>
-
-            <div className="grid sm:grid-cols-3 gap-8 text-center md:text-left mt-6">
-              <div>
-                <p className="font-semibold uppercase text-sm text-gray-500">
-                  E-mail
-                </p>
-                <p className="text-yellow-400">gabrochabarber 
-                  @gmail.com</p>
-              </div>
-
-              <div>
-                <p className="font-semibold uppercase text-sm text-gray-500">
-                  Função
-                </p>
-                <p>Barbeiro & Designer Capilar</p>
-              </div>
-
-              <div>
-                <p className="font-semibold uppercase text-sm text-gray-500">
-                  Telefone
-                </p>
-                <p className="text-yellow-400">(+55) 98765-4321</p>
-              </div>
-            </div>
-
-            <Button
-              size="lg"
-              className="mt-6 bg-yellow-400 text-gray-900 font-semibold px-6 py-3 rounded-full hover:bg-yellow-500 transition-all shadow-md hover:shadow-lg hover:scale-105"
-            >
-              Baixar CV
-            </Button>
+            <p className="leading-relaxed">
+              Usamos apenas os melhores produtos do mercado e nossa equipe é treinada para 
+              oferecer um atendimento personalizado, entendendo o estilo único de cada cliente.
+            </p>
           </div>
-
-          {/* Imagem à direita */}
-          <div className="flex justify-center md:justify-end relative">
-            <div className="relative group w-full max-w-md">
-              {/* Círculo decorativo */}
-              <div className="absolute -top-8 -right-8 w-52 h-52 bg-yellow-400 rounded-full blur-xl opacity-40 -z-10 transition-transform duration-700 group-hover:scale-110"></div>
-
-              <img
-                src={barberHero}
-                alt="Gabriel Rocha"
-                className="w-full h-[30rem] object-cover rounded-lg border-[6px] border-gray-700 shadow-2xl transition-transform duration-500 group-hover:scale-105"
-              />
-            </div>
+          <div>
+            <img 
+              src={gabrielImg} 
+              alt="Gabriel Rocha" 
+              className="rounded-lg shadow-xl w-full h-auto object-cover"
+            />
           </div>
         </div>
-      </main>
+      </div>
     </div>
   );
 };
 
+// --- ESTA LINHA CORRIGE O ERRO ---
 export default Sobre;

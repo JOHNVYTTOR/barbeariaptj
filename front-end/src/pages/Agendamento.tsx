@@ -8,6 +8,7 @@ import { Input } from "@/components/ui/input";
 import { Checkbox } from "@/components/ui/checkbox"; // 1. Importar o Checkbox
 import { ChevronLeft, ChevronRight, Check } from "lucide-react";
 import { toast } from "sonner";
+import api from '../api.ts';
 
 const Agendamento = () => {
   const [step, setStep] = useState(1);
@@ -73,7 +74,7 @@ const Agendamento = () => {
 
     try {
         const serviceNames = selectedServicesData.map(s => s.name).join(', ');
-        const response = await fetch('http://localhost:5000/api/appointments', {
+        const response = await api.post('/agendamentos/', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
@@ -83,10 +84,6 @@ const Agendamento = () => {
                 time: selectedTime,
             })
         });
-
-        if (!response.ok) {
-            throw new Error('Falha ao agendar horário. Tente novamente.');
-        }
 
         toast.success("Agendamento confirmado!", {
             description: "Seu horário foi agendado com sucesso. Você receberá uma confirmação.",
@@ -104,18 +101,18 @@ const Agendamento = () => {
   };
 
   const formatDate = (date: Date) => {
-    return date.toLocaleDateString('pt-BR', { 
-      weekday: 'long', 
-      year: 'numeric', 
-      month: 'long', 
-      day: 'numeric' 
+    return date.toLocaleDateString('pt-BR', {
+      weekday: 'long',
+      year: 'numeric',
+      month: 'long',
+      day: 'numeric'
     });
   };
 
   return (
     <div className="min-h-screen bg-gray-900 text-gray-100 transition-colors duration-300">
       <Navigation />
-      
+     
       <div className="max-w-4xl mx-auto px-4 py-12">
         <div className="text-center mb-12 mt-20">
           <h1 className="text-4xl font-bold mb-4">
@@ -249,7 +246,7 @@ const Agendamento = () => {
                 <ChevronLeft size={20} className="mr-2" />
                 Voltar
               </Button>
-              
+             
               {step < 3 ? (
                 <Button
                   onClick={handleNext}

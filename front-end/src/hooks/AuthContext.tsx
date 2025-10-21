@@ -1,13 +1,15 @@
 import React, { createContext, useState, useContext, useEffect, ReactNode } from 'react';
 import { useNavigate } from 'react-router-dom';
+import api from '@/api'; // Importa a instância do axios
 
-// --- Tipagem ---
-// (Adapte esta interface 'Usuario' conforme sua entidade no backend)
+// --- Tipagem (Baseada nas suas Entidades Java) ---
+
 interface TipoUsuario {
   idTipoUsuario: number;
   nomeTipoUsuario: string;
 }
 
+// Este é o usuário que vem do backend
 interface Usuario {
   id: number;
   nome: string;
@@ -35,7 +37,9 @@ interface AuthContextType {
 // -----------------
 
 // 1. Cria o Contexto
-const AuthContext = createContext<AuthContextType | undefined>(undefined);
+// --- CORREÇÃO AQUI: Adicionado "export" ---
+export const AuthContext = createContext<AuthContextType | undefined>(undefined);
+// ------------------------------------------
 
 // 2. Cria o Provedor (Provider)
 interface AuthProviderProps {
@@ -52,22 +56,21 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   useEffect(() => {
     try {
       const storedToken = localStorage.getItem('authToken');
-      const storedUserName = localStorage.getItem('userName');
-      const storedUserRole = localStorage.getItem('userRole');
-     
-      // (Isso é uma simplificação. O ideal seria ter o objeto 'user' completo no storage)
-      // Por enquanto, vamos recriar um objeto 'user' parcial.
-      if (storedToken && storedUserName && storedUserRole) {
+      const storedUser = localStorage.getItem('user'); // Busca o usuário
+      
+      if (storedToken && storedUser) {
+        const parsedUser: Usuario = JSON.parse(storedUser);
         setToken(storedToken);
-        // Recria um objeto de usuário parcial com o que temos
-        setUser({
-            nome: storedUserName,
-            tipoUsuario: { nomeTipoUsuario: storedUserRole }
-            // Preencha outros campos com valores padrão ou nulos se necessário
-        } as Usuario); // Usamos 'as' porque sabemos que é parcial
+        setUser(parsedUser);
+        
+        // Sincroniza o token no header do axios
+        api.defaults.headers.common['Authorization'] = `Bearer ${storedToken}`;
       }
     } catch (error) {
       console.error("Falha ao carregar dados de autenticação", error);
+      // Limpa storage inválido
+      localStorage.removeItem('authToken');
+      localStorage.removeItem('user');
     } finally {
       setLoading(false); // Termina o carregamento
     }
@@ -76,23 +79,27 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   // Função de Login
   const login = (data: AuthResponse) => {
     const { token, user } = data;
-   
+    
     // 1. Salva no React State
     setUser(user);
     setToken(token);
 
-    // 2. Salva no localStorage
+    // 2. Salva no localStorage (Salvando o usuário como JSON)
     localStorage.setItem('authToken', token);
+    localStorage.setItem('user', JSON.stringify(user));
+    // (Os outros 'userName' e 'userRole' são redundantes se temos 'user')
     localStorage.setItem('userName', user.nome);
     localStorage.setItem('userRole', user.tipoUsuario.nomeTipoUsuario);
-    // (O ideal é salvar o objeto user inteiro como string JSON)
-    // localStorage.setItem('user', JSON.stringify(user));
 
-    // 3. Redireciona
+
+    // 3. Define o token nos headers padrão do axios para futuras requisições
+    api.defaults.headers.common['Authorization'] = `Bearer ${token}`;
+
+    // 4. Redireciona
     if (user.tipoUsuario.nomeTipoUsuario === 'Admin') {
       navigate("/dashboard");
     } else {
-      navigate("/");
+      navigate("/"); // Redireciona cliente para a home
     }
   };
 
@@ -106,9 +113,12 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     localStorage.removeItem('authToken');
     localStorage.removeItem('userName');
     localStorage.removeItem('userRole');
-    // localStorage.removeItem('user');
+    localStorage.removeItem('user');
 
-    // 3. Redireciona para o login
+    // 3. Remove o token dos headers do axios
+    delete api.defaults.headers.common['Authorization'];
+
+    // 4. Redireciona para o login
     navigate("/login");
   };
 
@@ -121,11 +131,4 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   );
 };
 
-// 3. Cria o Hook (O que o usuário pediu)
-export const useAuth = (): AuthContextType => {
-  const context = useContext(AuthContext);
-  if (context === undefined) {
-    throw new Error('useAuth deve ser usado dentro de um AuthProvider');
-  }
-  return context;
-};
+// (Removi o hook 'useAuth' daqui, pois ele já está no seu próprio arquivo 'useAuth.tsx')

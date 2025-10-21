@@ -6,6 +6,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Link, useNavigate } from "react-router-dom";
 import { toast } from "sonner"; // Importa o toast do Sonner
 import { ArrowLeft } from "lucide-react"; 
+import api from '../api.ts'
 
 import logoBlur from "@/assets/logo-blur-bg.png"; 
 import logoImage from "@/assets/logo.png";
@@ -49,11 +50,11 @@ const formatPhone = (value: string) => {
 // =================================================================
 const Cadastro = () => {
   const [formData, setFormData] = useState({
-    name: "",
+    nome: "",
     email: "",
     cpf: "",
-    phone: "",
-    password: "",
+    telefone: "",
+    senha: "",
     confirmPassword: ""
   });
   const navigate = useNavigate();
@@ -67,7 +68,7 @@ const Cadastro = () => {
     } 
     
     // ATENÇÃO: Aplica a máscara de Telefone
-    else if (field === 'phone') {
+    else if (field === 'telefone') {
       formattedValue = formatPhone(value);
     }
 
@@ -81,14 +82,14 @@ const Cadastro = () => {
     e.preventDefault();
     
     // ... (lógica de validação e API call mantida)
-    if (!formData.name || !formData.email || !formData.password || !formData.confirmPassword) {
+    if (!formData.nome || !formData.email || !formData.senha || !formData.confirmPassword) {
       toast.error("Campos obrigatórios", {
         description: "Por favor, preencha nome, e-mail e senha.",
       });
       return;
     }
 
-    if (formData.password !== formData.confirmPassword) {
+    if (formData.senha !== formData.confirmPassword) {
       toast.error("Senhas não conferem", {
         description: "Por favor, verifique se as senhas são iguais.",
       });
@@ -99,29 +100,23 @@ const Cadastro = () => {
     const cleanedData = {
         ...formData,
         cpf: formData.cpf.replace(/\D/g, ''),
-        phone: formData.phone.replace(/\D/g, ''),
+        telefone: formData.telefone.replace(/\D/g, ''),
     };
 
 
     try {
-      const response = await fetch('http://localhost:5000/api/auth/register', {
+      const response = await api.post('/usuarios/register', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
-              name: cleanedData.name,
+              nome: cleanedData.nome,
               email: cleanedData.email,
-              password: cleanedData.password
-              // Você pode incluir cpf e phone no body, mas lembre-se de que a API
-              // pode precisar deles sem formatação (numericValue).
+              senha: cleanedData.senha,
+              cpf: cleanedData.cpf,
+              telefone: cleanedData.telefone,
           })
       });
-
-      const data = await response.json();
-
-      if (!response.ok) {
-          throw new Error(data.message || "Erro desconhecido no servidor.");
-      }
-
+      
       toast.success("Cadastro realizado com sucesso!", {
         description: "Bem-vindo! Agora você pode fazer login.",
       });
@@ -175,10 +170,10 @@ const Cadastro = () => {
             <div className="space-y-2">
               <Label htmlFor="name" className="text-gray-100">Nome:</Label>
               <Input
-                id="name"
+                id="nome"
                 type="text"
-                value={formData.name}
-                onChange={(e) => handleInputChange("name", e.target.value)}
+                value={formData.nome}
+                onChange={(e) => handleInputChange("nome", e.target.value)}
                 placeholder="Seu nome completo"
                 className="bg-white/10 text-white placeholder-gray-300 border border-gray-500 focus:ring-2 focus:ring-yellow-400"
               />
@@ -215,15 +210,15 @@ const Cadastro = () => {
             
             {/* Campo Telefone (com Máscara) */}
             <div className="space-y-2">
-              <Label htmlFor="phone" className="text-gray-100">Telefone (Opcional):</Label>
+              <Label htmlFor="telefone" className="text-gray-100">Telefone (Opcional):</Label>
               <Input
-                id="phone"
+                id="telefone"
                 type="tel"
                 // ATENÇÃO: Adicionado pattern e maxLength
                 pattern="\(\d{2}\) \d{5}-\d{4}"
                 maxLength={15} // (xx) xxxxx-xxxx
-                value={formData.phone}
-                onChange={(e) => handleInputChange("phone", e.target.value)}
+                value={formData.telefone}
+                onChange={(e) => handleInputChange("telefone", e.target.value)}
                 placeholder="(11) 99999-9999"
                 className="bg-white/10 text-white placeholder-gray-300 border border-gray-500 focus:ring-2 focus:ring-yellow-400"
               />
@@ -231,12 +226,12 @@ const Cadastro = () => {
 
             {/* Campos Senha (mantidos) */}
             <div className="space-y-2">
-              <Label htmlFor="password" className="text-gray-100">Senha:</Label>
+              <Label htmlFor="senha" className="text-gray-100">Senha:</Label>
               <Input
-                id="password"
+                id="senha"
                 type="password"
-                value={formData.password}
-                onChange={(e) => handleInputChange("password", e.target.value)}
+                value={formData.senha}
+                onChange={(e) => handleInputChange("senha", e.target.value)}
                 placeholder="Crie uma senha forte"
                 className="bg-white/10 text-white placeholder-gray-300 border border-gray-500 focus:ring-2 focus:ring-yellow-400"
               />
