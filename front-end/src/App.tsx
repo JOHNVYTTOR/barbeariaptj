@@ -8,12 +8,12 @@ import Login from './pages/Login'
 import Cadastro from './pages/Cadastro'
 import Dashboard from './pages/Dashboard'
 import NotFound from './pages/NotFound'
-import { useAuth } from './hooks/useAuth';
+import { useAuth } from '@/hooks/useAuth';
 import { SidebarProvider } from "@/components/ui/sidebar"; // 1. Importe o SidebarProvider
 import Unauthorized from './pages/Unauthorized'
 
 const App = () => {
-  const { user } = useAuth(); // Pega o usuário do contexto de autenticação
+  const { user, login } = useAuth(); // Pega o usuário do contexto de autenticação
 
   // Determina se o usuário é Admin (ajuste conforme sua lógica)
   const isAdmin = user?.tipoUsuario?.nomeTipoUsuario === 'Admin';
@@ -24,7 +24,7 @@ const App = () => {
       <Route path="/agendamento" element={<Agendamento />} />
       <Route path="/sobre" element={<Sobre />} />
       <Route path="/loja" element={<Loja />} />
-      <Route path="/login" element={<Login />} />
+      <Route path="/login" element={<Login loginFn={login}/>} />
       <Route path="/cadastro" element={<Cadastro />} />
 
       {/* Rota condicional para o Dashboard */}
