@@ -6,7 +6,7 @@ import { BrowserRouter } from 'react-router-dom'
 import { Toaster as Sonner } from "@/components/ui/sonner" // Importar o Sonner
 import { TooltipProvider } from "@/components/ui/tooltip" // Importar Tooltip
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query" // Importar Query
-import { AuthProvider } from './hooks/AuthContext' // Importar Auth
+import AuthProvider from './hooks/useAuth.tsx'
 
 // Criar o client do React Query
 const queryClient = new QueryClient(); 

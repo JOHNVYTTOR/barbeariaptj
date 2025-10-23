@@ -7,7 +7,7 @@ import { Link, useNavigate } from "react-router-dom";
 import { toast } from "sonner"; // Importa o toast do Sonner
 import { Home } from "lucide-react"; // ATENÇÃO: Trocado ArrowLeft por Home
 import { useAuth } from "@/hooks/useAuth";
-import api from '../api.ts'
+import { api } from '../api.ts'
 import { AxiosError } from "axios";
 
 import logoBlur from "@/assets/logo-blur-bg.png";

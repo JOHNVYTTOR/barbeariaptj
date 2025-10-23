@@ -20,7 +20,7 @@ import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
 import { AxiosError } from "axios";
 import { format } from "date-fns";
-import api from "@/api"; // Importa o api
+import { api } from "@/api"; // Importa o api
 import { Sidebar } from "@/components/ui/sidebar"; // Importa o Sidebar
 
 // --- INTERFACE (BOA PRÁTICA) ---
@@ -45,7 +45,7 @@ const Dashboard = () => {
       setLoading(true);
       try {
         // O interceptor 'api.ts' adiciona o token de Admin automaticamente
-        const response = await api.get('/api/appointments'); 
+        const response = await api.get('/agendamentos'); 
         setAppointments(response.data);
       } catch (error) {
         // O interceptor já trata 401 (Não Autorizado) ou 403 (Proibido)

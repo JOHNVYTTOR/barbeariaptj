@@ -8,7 +8,7 @@ import { Input } from "@/components/ui/input";
 import { Checkbox } from "@/components/ui/checkbox"; // 1. Importar o Checkbox
 import { ChevronLeft, ChevronRight, Check } from "lucide-react";
 import { toast } from "sonner";
-import api from '../api.ts';
+import { api } from '../api.ts';
 
 const Agendamento = () => {
   const [step, setStep] = useState(1);
@@ -19,12 +19,15 @@ const Agendamento = () => {
   const [clientName, setClientName] = useState("");
 
   const services = [
-    { id: "barba", name: "Barba Completa", price: "R$ 45" },
-    { id: "degrade", name: "Corte Degradê ou Navalhinha", price: "R$ 55" },
-    { id: "social", name: "Corte Social", price: "R$ 35" },
-    { id: "combo", name: "Corte + Barba", price: "R$ 90" },
-    { id: "sobrancelha", name: "Design de Sobrancelha", price: "R$ 15" },
-    { id: "pezinho", name: "Pezinho", price: "R$ 15" },
+    { id: "corte", name: "Corte", price: "R$ 35" },
+    { id: "barba", name: "Barba", price: "R$ 35" },
+    { id: "sobrancelha", name: "Sobrancelha", price: "R$ 10" },
+    { id: "corte+barba", name: "Corte e Barba", price: "R$ 60" },
+    { id: "corte+barba+sobrancelha", name: "Corte, Barba e Sobrancelha", price: "R$ 70" },
+    { id: "corte+sobrancelha", name: "Corte e Sobrancelha", price: "R$ 45" },
+    { id: "corte+platinado", name: "Corte + Platinado", price: "R$ 130" },
+    { id: "corte+platinado+sobrancelha", name: "Corte + Platinado, e Sobrancelha", price: "R$ 140" },
+    { id: "corte+platinado+barba+sobrancelha", name: "Corte + Platinado, Barba e Sobrancelha", price: "R$ 160" },
   ];
 
   const timeSlots = [
@@ -36,12 +39,11 @@ const Agendamento = () => {
   const handleServiceChange = (serviceId: string) => {
     setSelectedServices((prevSelected) =>
       prevSelected.includes(serviceId)
-        ? prevSelected.filter((id) => id !== serviceId) // Remove se já estiver selecionado
-        : [...prevSelected, serviceId] // Adiciona se não estiver
+        ? prevSelected.filter((id) => id !== serviceId)
+        : [...prevSelected, serviceId] 
     );
   };
 
-  // 4. Lógica para obter os dados e calcular o preço total dos serviços selecionados
   const selectedServicesData = services.filter(s => selectedServices.includes(s.id));
   const totalPrice = selectedServicesData.reduce((total, service) => {
     const price = parseFloat(service.price.replace("R$ ", "").replace(",", "."));
@@ -74,12 +76,12 @@ const Agendamento = () => {
 
     try {
         const serviceNames = selectedServicesData.map(s => s.name).join(', ');
-        const response = await api.post('/agendamentos/', {
+        const response = await api.post('/agendamentos', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
                 clientName: clientName,
-                service: serviceNames, // Envia os nomes dos serviços
+                service: serviceNames,
                 date: selectedDate?.toISOString().split('T')[0],
                 time: selectedTime,
             })

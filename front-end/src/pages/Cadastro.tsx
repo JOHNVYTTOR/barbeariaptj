@@ -6,7 +6,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Link, useNavigate } from "react-router-dom";
 import { toast } from "sonner"; // Importa o toast do Sonner
 import { ArrowLeft } from "lucide-react"; 
-import api from '../api.ts'
+import { api } from '../api.ts'
 
 import logoBlur from "@/assets/logo-blur-bg.png"; 
 import logoImage from "@/assets/logo.png";
@@ -48,83 +48,71 @@ const formatPhone = (value: string) => {
 // =================================================================
 // COMPONENTE CADASTRO
 // =================================================================
-const Cadastro = () => {
-  const [formData, setFormData] = useState({
+interface FormData {
+  nome: string;
+  email: string;
+  senha: string;
+  cpf: string;
+  telefone: string;
+}
+
+const Cadastro: React.FC = () => {
+  const [formData, setFormData] = useState<FormData>({
     nome: "",
     email: "",
+    senha: "",
     cpf: "",
     telefone: "",
-    senha: "",
-    confirmPassword: ""
   });
+  const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
 
-  const handleInputChange = (field: string, value: string) => {
+  const handleChange = (name: string, value: string) => {
     let formattedValue = value;
 
-    // ATENÇÃO: Aplica a máscara de CPF
-    if (field === 'cpf') {
-      formattedValue = formatCPF(value);
-    } 
-    
-    // ATENÇÃO: Aplica a máscara de Telefone
-    else if (field === 'telefone') {
-      formattedValue = formatPhone(value);
+    // 1. Aplica a máscara APENAS se for o campo CPF ou Telefone
+    if (name === "cpf") {
+        formattedValue = formatCPF(value);
+    } else if (name === "telefone") {
+        formattedValue = formatPhone(value);
     }
-
-    setFormData(prev => ({
-      ...prev,
-      [field]: formattedValue
-    }));
-  };
+    
+    // 2. Atualiza o estado com o valor (mascarado ou não)
+    setFormData((prev) => ({ ...prev, [name]: formattedValue }));
+};
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
-    // ... (lógica de validação e API call mantida)
-    if (!formData.nome || !formData.email || !formData.senha || !formData.confirmPassword) {
-      toast.error("Campos obrigatórios", {
-        description: "Por favor, preencha nome, e-mail e senha.",
-      });
-      return;
-    }
-
-    if (formData.senha !== formData.confirmPassword) {
-      toast.error("Senhas não conferem", {
-        description: "Por favor, verifique se as senhas são iguais.",
-      });
-      return;
-    }
-
-    // Antes de enviar, é recomendado remover a máscara de CPF e Telefone
-    const cleanedData = {
-        ...formData,
-        cpf: formData.cpf.replace(/\D/g, ''),
-        telefone: formData.telefone.replace(/\D/g, ''),
-    };
-
-
+    setLoading(true);
+    const cleanCpf = formData.cpf.replace(/\D/g, '');
+    const cleanTelefone = formData.telefone.replace(/\D/g, '');
     try {
-      const response = await api.post('/usuarios/register', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-              nome: cleanedData.nome,
-              email: cleanedData.email,
-              senha: cleanedData.senha,
-              cpf: cleanedData.cpf,
-              telefone: cleanedData.telefone,
-          })
+      const response = await api.post("/usuarios/register", {
+        nomeUsuario: formData.nome,
+        email: formData.email,
+        senha: formData.senha,
+        cpf: formData.cpf,
+        telefone: formData.telefone,
       });
-      
-      toast.success("Cadastro realizado com sucesso!", {
-        description: "Bem-vindo! Agora você pode fazer login.",
-      });
-      
-      navigate("/login");
 
+      alert("Cadastro realizado com sucesso!");
+      localStorage.setItem("idUsuario", response.data.idUsuario);
+      setFormData({
+        nome: "",
+        email: "",
+        senha: "",
+        cpf: "",
+        telefone: "",
+      });
+      navigate("/login");
     } catch (error: any) {
-      toast.error("Erro no Cadastro", { description: error.message });
+      console.error(error);
+      alert(
+        error.response?.data?.message ||
+          "Falha ao cadastrar usuário. Tente novamente."
+      );
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -172,8 +160,8 @@ const Cadastro = () => {
               <Input
                 id="nome"
                 type="text"
-                value={formData.nome}
-                onChange={(e) => handleInputChange("nome", e.target.value)}
+                value={formData.nome} 
+                onChange={(e) => handleChange("nome", e.target.value)}
                 placeholder="Seu nome completo"
                 className="bg-white/10 text-white placeholder-gray-300 border border-gray-500 focus:ring-2 focus:ring-yellow-400"
               />
@@ -186,7 +174,7 @@ const Cadastro = () => {
                 id="email"
                 type="email"
                 value={formData.email}
-                onChange={(e) => handleInputChange("email", e.target.value)}
+                onChange={(e) => handleChange("email", e.target.value)}
                 placeholder="seu.email@exemplo.com"
                 className="bg-white/10 text-white placeholder-gray-300 border border-gray-500 focus:ring-2 focus:ring-yellow-400"
               />
@@ -202,7 +190,7 @@ const Cadastro = () => {
                 pattern="\d{3}\.\d{3}\.\d{3}-\d{2}"
                 maxLength={14}
                 value={formData.cpf}
-                onChange={(e) => handleInputChange("cpf", e.target.value)}
+                onChange={(e) => handleChange("cpf", e.target.value)}
                 placeholder="000.000.000-00"
                 className="bg-white/10 text-white placeholder-gray-300 border border-gray-500 focus:ring-2 focus:ring-yellow-400"
               />
@@ -218,7 +206,7 @@ const Cadastro = () => {
                 pattern="\(\d{2}\) \d{5}-\d{4}"
                 maxLength={15} // (xx) xxxxx-xxxx
                 value={formData.telefone}
-                onChange={(e) => handleInputChange("telefone", e.target.value)}
+                onChange={(e) => handleChange("telefone", e.target.value)}
                 placeholder="(11) 99999-9999"
                 className="bg-white/10 text-white placeholder-gray-300 border border-gray-500 focus:ring-2 focus:ring-yellow-400"
               />
@@ -231,24 +219,12 @@ const Cadastro = () => {
                 id="senha"
                 type="password"
                 value={formData.senha}
-                onChange={(e) => handleInputChange("senha", e.target.value)}
+                onChange={(e) => handleChange("senha", e.target.value)}
                 placeholder="Crie uma senha forte"
                 className="bg-white/10 text-white placeholder-gray-300 border border-gray-500 focus:ring-2 focus:ring-yellow-400"
-              />
+              />  
             </div>
 
-            <div className="space-y-2">
-              <Label htmlFor="confirmPassword" className="text-gray-100">Confirmar Senha:</Label>
-              <Input
-                id="confirmPassword"
-                type="password"
-                value={formData.confirmPassword}
-                onChange={(e) => handleInputChange("confirmPassword", e.target.value)}
-                placeholder="Repita sua senha"
-                className="bg-white/10 text-white placeholder-gray-300 border border-gray-500 focus:ring-2 focus:ring-yellow-400"
-              />
-            </div>
-            
             {/* Botão de Cadastro (mantido) */}
             <Button 
               type="submit" 
