@@ -24,11 +24,16 @@ public class UsuarioController {
 	@Autowired
 	private UsuarioService usuarioService;
 
-	@PostMapping("/register")
-	public ResponseEntity<Usuario> createUsuario(@RequestBody Usuario usuario) {
-		Usuario novoUsuario = usuarioService.saveUsuario(usuario);
-		return ResponseEntity.ok(novoUsuario);
-	}
+	@PostMapping("/login")
+	   public Usuario login(@RequestBody Usuario loginRequest) {
+	       Usuario usuario = usuarioService
+	               .autenticarUsuario(loginRequest.getEmail(), loginRequest.getSenha());
+	       
+	       if(usuario != null) {
+	           return usuario;
+	       }
+	       return null;
+	   }
 	
 	@GetMapping
 	public List<Usuario> getAllUsuarios() {
@@ -50,14 +55,9 @@ public class UsuarioController {
 		usuarioService.deleteUsuarioById(id);
 	}
 	
-	@PostMapping("/login")
-	public Usuario login(@RequestBody Usuario loginRequest) {
-		Usuario usuario = usuarioService
-				.autenticarUsuario(loginRequest.getEmail(), loginRequest.getSenha());
-		
-		if(usuario != null) {
-			return usuario;
-		}
-		return null;
-	}
+	@PostMapping("/register")
+	   public ResponseEntity<Usuario> createUsuario(@RequestBody Usuario usuario) {
+	       Usuario novoUsuario = usuarioService.saveUsuario(usuario);
+	       return ResponseEntity.ok(novoUsuario);
+	   }
 }

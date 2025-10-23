@@ -12,7 +12,7 @@ import jakarta.persistence.ManyToOne;
 import jakarta.persistence.Table;
 
 @Entity
-@Table(name = "tb_clientes")
+@Table(name = "tb_usuario")
 public class Usuario {
 	
 	@Id
@@ -32,12 +32,15 @@ public class Usuario {
 	@Column(name = "senha", nullable = false, length = 255)
 	private String senha;
 	
+	@Column(name = "telefone", nullable = false)
+	private int telefone;
+	
 	@ManyToOne
 	@JoinColumn(name = "tipo_usuario_id", nullable = false)
 	@JsonIgnoreProperties("usuarios")
 	private TipoUsuario tipoUsuario;
 
-	public Usuario(Long idUsuario, String nome, int cpf, String email, String senha, TipoUsuario tipoUsuario) {
+	public Usuario(Long idUsuario, String nome, int cpf, String email, String senha, int telefone, TipoUsuario tipoUsuario) {
 		super();
 		this.idUsuario = idUsuario;
 		this.nome = nome;
@@ -45,6 +48,7 @@ public class Usuario {
 		this.email = email;
 		this.senha = senha;
 		this.tipoUsuario = tipoUsuario;
+		this.telefone = telefone;
 	}
 	
 	public Usuario() {
@@ -97,5 +101,13 @@ public class Usuario {
 
 	public void setTipoUsuario(TipoUsuario tipoUsuario) {
 		this.tipoUsuario = tipoUsuario;
+	}
+
+	public int getTelefone() {
+		return telefone;
+	}
+
+	public void setTelefone(int telefone) {
+		this.telefone = telefone;
 	}
 }
