@@ -1,3 +1,5 @@
+// AuthContext.tsx
+
 import React, { createContext, useState, useContext, useEffect, ReactNode } from 'react';
 import { useNavigate } from 'react-router-dom';
 import api from '@/api'; // Importa a instância do axios
@@ -16,7 +18,6 @@ interface Usuario {
   email: string;
   telefone: string;
   tipoUsuario: TipoUsuario;
-  // Não inclua a senha!
 }
 
 // O que o backend retorna no login (/auth/login)
@@ -37,9 +38,7 @@ interface AuthContextType {
 // -----------------
 
 // 1. Cria o Contexto
-// --- CORREÇÃO AQUI: Adicionado "export" ---
 export const AuthContext = createContext<AuthContextType | undefined>(undefined);
-// ------------------------------------------
 
 // 2. Cria o Provedor (Provider)
 interface AuthProviderProps {
@@ -56,46 +55,56 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   useEffect(() => {
     try {
       const storedToken = localStorage.getItem('authToken');
-      const storedUser = localStorage.getItem('user'); // Busca o usuário
+      const storedUser = localStorage.getItem('user'); // Busca APENAS o objeto user
       
-      if (storedToken && storedUser) {
+      // Verifica se os dados essenciais existem E se não são a string "undefined"
+      if (storedToken && storedToken !== 'undefined' && 
+          storedUser && storedUser !== 'undefined') {
+        
+        // Faz o parse apenas dos dados essenciais
         const parsedUser: Usuario = JSON.parse(storedUser);
         setToken(storedToken);
         setUser(parsedUser);
         
         // Sincroniza o token no header do axios
         api.defaults.headers.common['Authorization'] = `Bearer ${storedToken}`;
+      
+      } else {
+        // Se os dados forem inválidos (null ou "undefined"), 
+        // limpa apenas os dados essenciais.
+        localStorage.removeItem('authToken');
+        localStorage.removeItem('user');
       }
+
     } catch (error) {
-      console.error("Falha ao carregar dados de autenticação", error);
-      // Limpa storage inválido
+      // Captura erros de JSON.parse (ex: dados corrompidos)
+      console.error("Falha ao carregar dados de autenticação (JSON inválido)", error);
+      // Limpa storage inválido/corrompido
       localStorage.removeItem('authToken');
       localStorage.removeItem('user');
     } finally {
-      setLoading(false); // Termina o carregamento
+      // Garante que o app seja liberado após a verificação
+      setLoading(false); 
     }
-  }, []);
+  }, []); // Array vazio garante que rode apenas uma vez, na inicialização
 
   // Função de Login
   const login = (data: AuthResponse) => {
     const { token, user } = data;
     
-    // 1. Salva no React State
+    // 1. Salva no React State (Reatividade imediata)
     setUser(user);
     setToken(token);
 
-    // 2. Salva no localStorage (Salvando o usuário como JSON)
+    // 2. Salva no localStorage (APENAS o essencial)
     localStorage.setItem('authToken', token);
-    localStorage.setItem('user', JSON.stringify(user));
-    // (Os outros 'userName' e 'userRole' são redundantes se temos 'user')
-    localStorage.setItem('userName', user.nome);
-    localStorage.setItem('userRole', user.tipoUsuario.nomeTipoUsuario);
+    localStorage.setItem('user', JSON.stringify(user)); // Salva o objeto usuário
 
-
-    // 3. Define o token nos headers padrão do axios para futuras requisições
+    // 3. Define o token nos headers padrão do axios
     api.defaults.headers.common['Authorization'] = `Bearer ${token}`;
 
-    // 4. Redireciona
+    // 4. Redireciona com base no tipo de usuário
+    // (Acessamos o tipo de usuário a partir do objeto 'user')
     if (user.tipoUsuario.nomeTipoUsuario === 'Admin') {
       navigate("/dashboard");
     } else {
@@ -109,10 +118,8 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     setUser(null);
     setToken(null);
 
-    // 2. Limpa o localStorage
+    // 2. Limpa o localStorage (APENAS o essencial)
     localStorage.removeItem('authToken');
-    localStorage.removeItem('userName');
-    localStorage.removeItem('userRole');
     localStorage.removeItem('user');
 
     // 3. Remove o token dos headers do axios
@@ -122,13 +129,27 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     navigate("/login");
   };
 
-  const isAuthenticated = !!token; // Verdadeiro se o token existir
+  // Valor booleano simples para verificar se está autenticado
+  const isAuthenticated = !!token; 
 
   return (
     <AuthContext.Provider value={{ isAuthenticated, user, token, login, logout, loading }}>
-      {!loading && children} {/* Só renderiza os filhos quando o loading terminar */}
+      {/* Não renderiza os componentes filhos (rotas, etc.) 
+        enquanto a autenticação inicial do localStorage não for verificada.
+      */}
+      {!loading && children} 
     </AuthContext.Provider>
   );
 };
 
-// (Removi o hook 'useAuth' daqui, pois ele já está no seu próprio arquivo 'useAuth.tsx')
+// 3. Hook customizado (Recomendado)
+// Facilita o uso do contexto nos componentes
+export const useAuth = () => {
+  const context = useContext(AuthContext);
+  
+  if (context === undefined) {
+    throw new Error('useAuth deve ser usado dentro de um AuthProvider');
+  }
+  
+  return context;
+};
