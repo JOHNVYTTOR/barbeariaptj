@@ -24,7 +24,7 @@ public class Usuario {
 	private String nome;
 	
 	@Column(name = "cpf", nullable = false, unique = true, length = 11)
-	private int cpf;
+	private String cpf;
 	
 	@Column(name = "email", nullable = false, length = 50, unique = true)
 	private String email;
@@ -33,14 +33,14 @@ public class Usuario {
 	private String senha;
 	
 	@Column(name = "telefone", nullable = false)
-	private int telefone;
+	private String telefone;
 	
 	@ManyToOne
 	@JoinColumn(name = "tipo_usuario_id", nullable = false)
 	@JsonIgnoreProperties("usuarios")
 	private TipoUsuario tipoUsuario;
 
-	public Usuario(Long idUsuario, String nome, int cpf, String email, String senha, int telefone, TipoUsuario tipoUsuario) {
+	public Usuario(Long idUsuario, String nome, String cpf, String email, String senha, String telefone, TipoUsuario tipoUsuario) {
 		super();
 		this.idUsuario = idUsuario;
 		this.nome = nome;
@@ -71,11 +71,11 @@ public class Usuario {
 		this.nome = nome;
 	}
 
-	public int getCpf() {
+	public String getCpf() {
 		return cpf;
 	}
 
-	public void setCpf(int cpf) {
+	public void setCpf(String cpf) {
 		this.cpf = cpf;
 	}
 
@@ -103,11 +103,11 @@ public class Usuario {
 		this.tipoUsuario = tipoUsuario;
 	}
 
-	public int getTelefone() {
+	public String getTelefone() {
 		return telefone;
 	}
 
-	public void setTelefone(int telefone) {
+	public void setTelefone(String telefone) {
 		this.telefone = telefone;
 	}
 }

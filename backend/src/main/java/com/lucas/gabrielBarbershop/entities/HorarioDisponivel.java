@@ -18,7 +18,7 @@ public class HorarioDisponivel {
 	@Column(name = "idHorarioDisponivel", nullable = false)
 	private Long idHorarioDisponivel;
 	
-	@Column(name = "horarios", nullable = false)
+	@Column(name = "horarios", nullable = false, unique = true)
 	private LocalDateTime horarios;
 	
 	private boolean disponivel = true;

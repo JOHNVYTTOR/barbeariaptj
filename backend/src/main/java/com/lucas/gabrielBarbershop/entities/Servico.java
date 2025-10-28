@@ -18,11 +18,8 @@ public class Servico {
 	@Column(name = "idServico", nullable = false)
 	private Long idServico;
 	
-	@Column(name = "nomeServico", nullable = false, length = 50)
+	@Column(name = "nomeServico", length = 50)
 	private String nomeServico;
-	
-	@Column(name = "descricaoServico")
-	private String descricao;
 	
 	@Column(name = "preco", nullable = false, precision = 5, scale = 2)
 	private BigDecimal preco;
@@ -30,11 +27,10 @@ public class Servico {
 	@Column(name = "duracao")
 	private Integer duracao;
 
-	public Servico(Long idServico, String nomeServico, String descricao, BigDecimal preco, Integer duracao) {
+	public Servico(Long idServico, String nomeServico, BigDecimal preco, Integer duracao) {
 		super();
 		this.idServico = idServico;
 		this.nomeServico = nomeServico;
-		this.descricao = descricao;
 		this.preco = preco;
 		this.duracao = duracao;
 	}
@@ -58,15 +54,7 @@ public class Servico {
 	public void setNomeServico(String nomeServico) {
 		this.nomeServico = nomeServico;
 	}
-
-	public String getDescricao() {
-		return descricao;
-	}
-
-	public void setDescricao(String descricao) {
-		this.descricao = descricao;
-	}
-
+	
 	public BigDecimal getPreco() {
 		return preco;
 	}

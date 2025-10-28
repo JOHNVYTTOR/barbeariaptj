@@ -1,5 +1,6 @@
 package com.lucas.gabrielBarbershop.repositories;
 
+import java.time.LocalDateTime;
 import java.util.List;
 
 import org.springframework.data.jpa.repository.JpaRepository;
@@ -10,5 +11,5 @@ import com.lucas.gabrielBarbershop.entities.HorarioDisponivel;
 @Repository
 public interface HorarioDisponivelRepository extends JpaRepository<HorarioDisponivel, Long> {
 	
-    List<HorarioDisponivel> findByDisponivelTrue();
+	 List<HorarioDisponivel>findByDisponivelTrueAndHorariosBetween(LocalDateTime inicio, LocalDateTime fim);
 }

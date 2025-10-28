@@ -32,10 +32,10 @@ public class Agendamento {
 	private LocalDateTime dataHora;
 	
 	@Column(name = "status", nullable = false)
-	private String status;
+	private boolean status;
 
 	public Agendamento(Long idAgendamento, Usuario usuario, Servico servico, LocalDateTime dataHora,
-			String status) {
+			boolean status) {
 		super();
 		this.idAgendamento = idAgendamento;
 		this.usuario = usuario;
@@ -80,11 +80,11 @@ public class Agendamento {
 		this.dataHora = dataHora;
 	}
 
-	public String getStatus() {
+	public boolean getStatus() {
 		return status;
 	}
 
-	public void setStatus(String status) {
+	public void setStatus(boolean status) {
 		this.status = status;
 	}
 }
