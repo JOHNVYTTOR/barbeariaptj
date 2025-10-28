@@ -24,15 +24,12 @@ interface FormData {
 const Login: React.FC<LoginProps> = ({ loginFn }) => {
   const [formData, setFormData] = useState<FormData>({ email: "", senha: "" });
   const [loading, setLoading] = useState(false);
-  const [showSenha, setShowSenha] = useState(false);
   const navigate = useNavigate();
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
     setFormData((prev) => ({ ...prev, [name]: value }));
   };
-
-  const toggleSenha = () => setShowSenha((prev) => !prev);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();

@@ -11,7 +11,9 @@ export interface User {
   nomeUsuario: string;
   email: string;
   senha: string;
-  tipoUsuario: TipoUsuario;
+  tipoUsuario: TipoUsuario; 
+  telefone: string;
+  cpf: string;
 }
 
 interface AuthContextType {

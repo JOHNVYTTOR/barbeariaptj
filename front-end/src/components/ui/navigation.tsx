@@ -1,10 +1,12 @@
 import { useState, useEffect } from "react";
 import { Link, useLocation } from "react-router-dom";
 import { Button } from "./button";
-import { Menu, X } from "lucide-react";
+import { Menu, X, User } from "lucide-react";
 import logoImage from "@/assets/logo.png";
+import { useAuth } from "@/hooks/useAuth"; // ✅ Importa hook de autenticação
 
 export const Navigation = () => {
+  const { user } = useAuth(); // ✅ Pega usuário logado
   const [isOpen, setIsOpen] = useState(false);
   const [isScrolled, setIsScrolled] = useState(false);
   const location = useLocation();
@@ -21,16 +23,11 @@ export const Navigation = () => {
   const firstPart = navItems.slice(0, 2);
   const secondPart = navItems.slice(2);
 
-  // Detecta o scroll para adicionar fundo ao header
+  // Adiciona fundo no scroll
   useEffect(() => {
     const handleScroll = () => {
-      if (window.scrollY > 10) {
-        setIsScrolled(true);
-      } else {
-        setIsScrolled(false);
-      }
+      setIsScrolled(window.scrollY > 10);
     };
-
     window.addEventListener("scroll", handleScroll);
     return () => window.removeEventListener("scroll", handleScroll);
   }, []);
@@ -43,9 +40,9 @@ export const Navigation = () => {
     >
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex justify-between h-20 items-center">
-          {/* Logo no mobile - ajustado para a esquerda para dar espaço ao menu */}
+          {/* Logo no mobile */}
           <div className="md:hidden flex-1">
-             <Link to="/">
+            <Link to="/">
               <img className="h-16 w-auto" src={logoImage} alt="Logo" />
             </Link>
           </div>
@@ -56,7 +53,6 @@ export const Navigation = () => {
               <Link
                 key={item.name}
                 to={item.href}
-                // REMOVIDO: font-display, tracking-wider, uppercase
                 className={`px-3 py-2 text-sm font-medium transition-colors ${
                   isActive(item.href)
                     ? "text-primary"
@@ -67,8 +63,11 @@ export const Navigation = () => {
               </Link>
             ))}
 
-            {/* Logo no meio */}
-            <Link to="/" className="flex-shrink-0 mx-4 transform hover:scale-110 transition-transform">
+            {/* Logo central */}
+            <Link
+              to="/"
+              className="flex-shrink-0 mx-4 transform hover:scale-110 transition-transform"
+            >
               <img className="h-20 w-auto" src={logoImage} alt="Logo" />
             </Link>
 
@@ -76,7 +75,6 @@ export const Navigation = () => {
               <Link
                 key={item.name}
                 to={item.href}
-                // REMOVIDO: font-display, tracking-wider, uppercase
                 className={`px-3 py-2 text-sm font-medium transition-colors ${
                   isActive(item.href)
                     ? "text-primary"
@@ -88,20 +86,32 @@ export const Navigation = () => {
             ))}
           </div>
 
-          {/* Botão Entrar e Menu Hamburger */}
-          <div className="flex items-center flex-1 justify-end">
-            <div className="hidden md:block">
-              <Link to="/login">
-                <Button
-                  size="sm"
-                  // REMOVIDO: font-display, tracking-wider
-                  className="border border-primary text-primary bg-transparent hover:bg-primary hover:text-black font-medium"
-                >
-                  Entrar
-                </Button>
-              </Link>
-            </div>
-            
+          {/* Lado direito (perfil e login) */}
+          <div className="flex items-center flex-1 justify-end space-x-3">
+            {/* Ícone de perfil linkado corretamente */}
+            <Link
+              to="/profile"
+              className="hidden md:flex text-white hover:text-primary transition-colors"
+              title="Meu Perfil"
+            >
+              <User size={24} />
+            </Link>
+
+            {/* Botão Entrar (só aparece se NÃO estiver logado) */}
+            {!user && (
+              <div className="hidden md:block">
+                <Link to="/login">
+                  <Button
+                    size="sm"
+                    className="border border-primary text-primary bg-transparent hover:bg-primary hover:text-black font-medium"
+                  >
+                    Entrar
+                  </Button>
+                </Link>
+              </div>
+            )}
+
+            {/* Menu Mobile */}
             <div className="md:hidden">
               <Button
                 variant="ghost"
@@ -124,7 +134,6 @@ export const Navigation = () => {
               <Link
                 key={item.name}
                 to={item.href}
-                // REMOVIDO: font-display, tracking-wider
                 className={`block px-3 py-2 text-base font-medium rounded-md text-center ${
                   isActive(item.href)
                     ? "text-primary bg-secondary"
@@ -135,13 +144,26 @@ export const Navigation = () => {
                 {item.name}
               </Link>
             ))}
-            <div className="border-t border-border pt-4 mt-2">
-              <Link to="/login">
-                <Button className="w-full bg-primary text-black font-medium hover:bg-primary/90">
-                  Entrar
-                </Button>
-              </Link>
-            </div>
+
+            {/* Ícone de perfil também no menu mobile */}
+            <Link
+              to="/profile"
+              className="flex items-center justify-center gap-2 text-white hover:text-primary mt-2"
+              onClick={() => setIsOpen(false)}
+            >
+              <User size={20} /> Meu Perfil
+            </Link>
+
+            {/* Botão Entrar Mobile (só aparece se NÃO estiver logado) */}
+            {!user && (
+              <div className="border-t border-border pt-4 mt-2">
+                <Link to="/login">
+                  <Button className="w-full bg-primary text-black font-medium hover:bg-primary/90">
+                    Entrar
+                  </Button>
+                </Link>
+              </div>
+            )}
           </div>
         </div>
       )}
