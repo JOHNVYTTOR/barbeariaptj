@@ -1,14 +1,14 @@
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Navigation } from "@/components/ui/navigation";
+// import { Navigation } from "@/components/ui/navigation"; // Comentado caso não esteja em uso
 import { Calendar } from "@/components/ui/calendar";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { Checkbox } from "@/components/ui/checkbox";
 import { ChevronLeft, ChevronRight, Check } from "lucide-react";
 import { toast } from "sonner";
-import { api } from '../api.ts'; // Certifique-se que o caminho para a api.ts está correto
+import { api } from '@/api'; // Corrigido o caminho da importação
 
 // --- Interfaces ---
 
@@ -26,6 +26,87 @@ interface HorarioDisponivelAPI {
   disponivel: boolean;
 }
 
+// --- Tipo para o Horário Selecionado ---
+// Guarda o objeto inteiro (ID + string de hora)
+type HorarioSelecionado = {
+  id: number;
+  horarioString: string; // ex: "10:30"
+  horarioISO: string;    // ex: "2025-10-30T10:30:00"
+} | null;
+
+
+// --- FUNÇÃO GERADORA DE TEMPLATE (MESMA DO DASHBOARD) ---
+// (Colocada fora do componente)
+/**
+ * Gera um template de horários padrão para um dia específico.
+ * @param selectedDate O dia para o qual gerar os horários.
+ * @returns Um array de objetos HorarioDisponivelAPI (com IDs nulos).
+ */
+const generateDailyTemplate = (selectedDate: Date): HorarioDisponivelAPI[] => {
+  const template: HorarioDisponivelAPI[] = [];
+  const date = new Date(selectedDate);
+
+  // Helper para formatar YYYY-MM-DD
+  const pad = (n: number) => n.toString().padStart(2, '0');
+  const yyyy = date.getFullYear();
+  const mm = pad(date.getMonth() + 1);
+  const dd = pad(date.getDate());
+  const dateString = `${yyyy}-${mm}-${dd}`;
+
+  // Helper para criar o objeto HorarioDisponivelAPI
+  const createEntry = (h: number, m: number): HorarioDisponivelAPI => {
+    // Cria o horário no formato ISO local correto, sem conversão UTC
+    const horarioISO = `${dateString}T${pad(h)}:${pad(m)}:00`;
+    
+    return {
+      // ID é nulo, mas criamos um ID temporário negativo baseado no timestamp
+      // para que o React possa usá-lo como 'key'
+      idHorarioDisponivel: -(new Date(horarioISO).getTime()), 
+      horarios: horarioISO,
+      disponivel: true, // Padrão é disponível
+    };
+  };
+
+  // Helper para incrementar 45 minutos
+  const incrementTime = (h: number, m: number): {h: number, m: number} => {
+      m += 45;
+      if (m >= 60) {
+        h += 1;
+        m -= 60;
+      }
+      return {h, m};
+  };
+
+  // --- Sessão da Manhã ---
+  let h = 7;
+  let m = 30;
+  const breakStartH = 12;
+  const breakStartM = 40;
+  
+  while (h < breakStartH || (h === breakStartH && m < breakStartM)) {
+    template.push(createEntry(h, m));
+    const next = incrementTime(h, m);
+    h = next.h;
+    m = next.m;
+  }
+  
+  // --- Sessão da Tarde ---
+  h = 13;
+  m = 40;
+  const endTimeH = 20; 
+  const endTimeM = 0;
+  
+  while (h < endTimeH || (h === endTimeH && m <= endTimeM)) {
+    template.push(createEntry(h, m));
+    const next = incrementTime(h, m);
+    h = next.h;
+    m = next.m;
+  }
+  
+  return template;
+};
+
+
 // --- Componente de Agendamento ---
 
 const Agendamento = () => {
@@ -33,8 +114,12 @@ const Agendamento = () => {
   const [step, setStep] = useState(1);
   const [selectedServices, setSelectedServices] = useState<number[]>([]);
   const [selectedDate, setSelectedDate] = useState<Date | undefined>(new Date());
-  const [selectedTime, setSelectedTime] = useState("");
-  const [nome, setClientNome] = useState("");
+  
+  // --- Estado de Horário Atualizado ---
+  // Armazena o objeto completo { id, horarioString, horarioISO }
+  const [selectedTime, setSelectedTime] = useState<HorarioSelecionado>(null); 
+  
+  const [nome, setClientNome] = useState(""); // Revertido para estado de string simples
 
   // --- Estados de Dados (Serviços) ---
   const [apiServices, setApiServices] = useState<Servico[]>([]);
@@ -42,9 +127,13 @@ const Agendamento = () => {
   const [servicesError, setServicesError] = useState<string | null>(null);
 
   // --- Estados de Dados (Horários) ---
-  const [availableTimes, setAvailableTimes] = useState<string[]>([]);
+  // Armazena a lista de objetos HorarioSelecionado
+  const [availableTimes, setAvailableTimes] = useState<HorarioSelecionado[]>([]); 
   const [isLoadingTimes, setIsLoadingTimes] = useState(false);
   const [timesError, setTimesError] = useState<string | null>(null);
+
+  // Estado para controlar o botão de confirmação
+  const [isConfirming, setIsConfirming] = useState(false); 
 
   // --- Efeitos (Hooks) ---
 
@@ -69,7 +158,6 @@ const Agendamento = () => {
 
   // useEffect para buscar horários disponíveis quando a data (selectedDate) mudar (Passo 2)
   useEffect(() => {
-    // Se nenhuma data estiver selecionada, limpa a lista
     if (!selectedDate) {
       setAvailableTimes([]);
       return;
@@ -78,7 +166,10 @@ const Agendamento = () => {
     const fetchAvailableTimes = async () => {
       setIsLoadingTimes(true);
       setTimesError(null);
-      setAvailableTimes([]); // Limpa horários anteriores enquanto carrega
+      setAvailableTimes([]); 
+
+      let horariosDoDia: HorarioDisponivelAPI[] = [];
+      let errorOccurred = false;
 
       try {
         // Formata a data para o formato YYYY-MM-DD
@@ -87,33 +178,49 @@ const Agendamento = () => {
         // Endpoint baseado no Dashboard.tsx: /horarios/disponiveis/{data}
         const response = await api.get(`/horarios/disponiveis/${formattedDate}`);
         
-        // A API retorna um array de objetos HorarioDisponivelAPI
-        const horariosDaAPI: HorarioDisponivelAPI[] = response.data;
+        if (response.data && response.data.length > 0) {
+          // 1. O dia já tem horários salvos no DB
+          horariosDoDia = response.data;
+        } else {
+          // 2. Dia sem horários (200 OK, mas array vazio). Geramos o template.
+          horariosDoDia = generateDailyTemplate(selectedDate);
+        }
 
-        // 1. Filtra apenas os que estão marcados como 'disponivel: true'
-        // 2. Mapeia e formata a string ISO para HH:MM
-        const horariosDisponiveis = horariosDaAPI
-          .filter(horario => horario.disponivel === true) 
+      } catch (error: any) {
+        if (error.response?.status === 404) {
+          // 3. Dia sem horários (404 Not Found). Geramos o template.
+          horariosDoDia = generateDailyTemplate(selectedDate);
+        } else {
+          // 4. Erro real
+          errorOccurred = true;
+          console.error("Erro ao buscar horários:", error);
+          setTimesError("Não foi possível carregar os horários. Tente outra data.");
+        }
+      } 
+      
+      if (!errorOccurred) {
+        // Processa a lista (vinda da API ou do Template)
+        const horariosDisponiveis = horariosDoDia
+          // 1. Filtra apenas os que estão marcados como 'disponivel: true'
+          .filter(horario => horario.disponivel === true)
+          // 2. Ordena pela data/hora (string ISO)
+          .sort((a, b) => new Date(a.horarios).getTime() - new Date(b.horarios).getTime())
+          // 3. Mapeia para o formato que o estado precisa
           .map(horario => {
-            // Converte a string ISO "2025-10-28T09:30:00" para "09:30"
             const dataObj = new Date(horario.horarios);
             const horas = dataObj.getHours().toString().padStart(2, '0');
             const minutos = dataObj.getMinutes().toString().padStart(2, '0');
-            return `${horas}:${minutos}`;
+            return {
+              id: horario.idHorarioDisponivel,
+              horarioString: `${horas}:${minutos}`,
+              horarioISO: horario.horarios
+            };
           });
 
         setAvailableTimes(horariosDisponiveis); 
-
-      } catch (error: any) {
-        console.error("Erro ao buscar horários:", error);
-        // Se o erro for 404 (dia sem horários cadastrados), não mostrar erro, apenas a lista vazia.
-        if (error.response?.status !== 404) {
-           setTimesError("Não foi possível carregar os horários. Tente outra data.");
-        }
-        // Se for 404, o setAvailableTimes([]) no início do try já trata de exibir a lista vazia.
-      } finally {
-        setIsLoadingTimes(false);
       }
+      
+      setIsLoadingTimes(false);
     };
 
     fetchAvailableTimes();
@@ -135,7 +242,6 @@ const Agendamento = () => {
     if (typeof preco === 'number') {
       numericPrice = preco;
     } else {
-      // Tentar converter a string "R$ 35,00" ou "35" para número
       numericPrice = parseFloat(String(preco).replace("R$ ", "").replace(",", "."));
     }
 
@@ -157,7 +263,7 @@ const Agendamento = () => {
       });
       return;
     }
-    if (step === 2 && (!selectedDate || !selectedTime)) {
+    if (step === 2 && !selectedTime) { // Verifica se selectedTime (o objeto) é nulo
       toast.error("Selecione data e horário", {
         description: "Por favor, escolha uma data e horário.",
       });
@@ -166,7 +272,7 @@ const Agendamento = () => {
     setStep(step + 1);
   };
 
-  // Confirmação final do agendamento
+  // Confirmação final do agendamento (COM AUTOMAÇÃO)
   const handleConfirm = async () => {
     if (!nome) {
       toast.error("Campo obrigatório", {
@@ -174,36 +280,60 @@ const Agendamento = () => {
       });
       return;
     }
+    
+    // Verifica se selectedTime não é nulo (necessário para o TypeScript)
+    if (!selectedTime || !selectedServicesData.length) {
+       toast.error("Erro interno", {
+        description: "Informações de horário ou serviço perdidas. Tente novamente.",
+      });
+      return;
+    }
 
-      try {
-        console.log('chegou aqui')
-        const serviceNames = selectedServicesData.map(s => s.nomeServico).join(', ');
-        const formattedDate = selectedDate?.toISOString().split('T')[0]; // YYYY-MM-DD
-        const dataHora = `${formattedDate}T${selectedTime}:00`; // Formato ISO 8601
+    setIsConfirming(true); // Desativa o botão
 
-const payload = {
-  usuario: { idUsuario: 1 },
-  servico: { idServico: selectedServicesData[0].idServico },
-  dataHora: dataHora,
-};
+    // 1. Payload para CRIAR o agendamento
+    const payloadAgendamento = {
+      // REVERTIDO: Usa um ID de usuário fixo (1)
+      usuario: { idUsuario: 1 }, 
+      servico: { idServico: selectedServicesData[0].idServico },
+      dataHora: selectedTime.horarioISO, // Usa o ISO do objeto 'selectedTime'
+      nomeCliente: nome // Adiciona o nome digitado
+    };
 
-        await api.post('/agendamentos', payload);
+    try {
+      // --- AÇÃO 1: Criar o Agendamento ---
+      await api.post('/agendamentos', payloadAgendamento);
+
+      // --- AÇÃO 2: Marcar o Horário como Indisponível ---
+      // Só executa se o ID do horário for válido (não for um template negativo)
+      if (selectedTime.id > 0) {
+        try {
+          await api.put(`/horarios/${selectedTime.id}/disponibilidade`, null, { 
+            params: { disponivel: false } 
+          });
+        } catch (error) {
+          // Loga o erro mas não bloqueia o usuário, pois o agendamento principal funcionou
+          console.error("Falha ao atualizar disponibilidade do horário:", error);
+        }
+      }
 
       toast.success("Agendamento confirmado!", {
-        description: "Seu horário foi agendado com sucesso. Você receberá uma confirmação.",
+        description: "Seu horário foi agendado com sucesso.",
       });
 
       // Resetar o formulário
       setStep(1);
       setSelectedServices([]);
       setSelectedDate(new Date());
-      setSelectedTime("");
+      setSelectedTime(null);
       setClientNome("");
 
     } catch (error: any) {
       console.error("Erro ao confirmar agendamento:", error);
       const errorMsg = error.response?.data?.message || error.message || "Erro desconhecido";
-      toast.error("Erro no agendamento", { description: errorMsg });
+      toast.error("Erro no agendamento", { description: `Falha ao criar agendamento: ${errorMsg}` });
+    } finally {
+      setIsConfirming(false); // Reativa o botão
     }
   };
 
@@ -254,7 +384,6 @@ const payload = {
   };
 
   // --- Cálculo de Totais (Memorização) ---
-  // (Cálculos derivados dos estados)
   const selectedServicesData = apiServices.filter(s => selectedServices.includes(s.idServico));
 
   const totalPrice = selectedServicesData.reduce((total, servico) => {
@@ -334,7 +463,7 @@ const payload = {
                     selected={selectedDate}
                     onSelect={(date) => {
                       setSelectedDate(date);
-                      setSelectedTime(""); // Reseta o horário ao mudar a data
+                      setSelectedTime(null); // Reseta o horário ao mudar a data
                     }}
                     disabled={(date) => date < new Date(new Date().setDate(new Date().getDate() - 1))}
                     className="rounded-md border border-gray-700 bg-gray-800 text-gray-100"
@@ -351,14 +480,14 @@ const payload = {
                       <div className="col-span-3 text-center text-gray-400">Nenhum horário disponível para esta data.</div>
                     ) : (
                       // Mapeia sobre os horários filtrados e formatados
-                      availableTimes.map((time) => (
+                      availableTimes.map((timeObj) => (
                         <Button
-                          key={time}
-                          variant={selectedTime === time ? "default" : "outline"}
-                          onClick={() => setSelectedTime(time)}
-                          className={`h-12 ${selectedTime === time ? "bg-yellow-400 text-black" : "border-gray-600 text-gray-200 hover:bg-gray-700"}`}
+                          key={timeObj.id} // Usa o ID como chave
+                          variant={selectedTime?.id === timeObj.id ? "default" : "outline"}
+                          onClick={() => setSelectedTime(timeObj)} // Salva o objeto inteiro
+                          className={`h-12 ${selectedTime?.id === timeObj.id ? "bg-yellow-400 text-black" : "border-gray-600 text-gray-200 hover:bg-gray-700"}`}
                         >
-                          {time}
+                          {timeObj.horarioString} {/* Mostra "10:30" */}
                         </Button>
                       ))
                     )}
@@ -379,6 +508,7 @@ const payload = {
                     onChange={(e) => setClientNome(e.target.value)}
                     placeholder="Digite seu nome completo"
                     className="bg-gray-800 border-gray-700 text-gray-100 placeholder-gray-500"
+                    // REVERTIDO: Campo de nome é sempre editável
                   />
                 </div>
                 <div className="bg-gray-800 border border-gray-700 p-6 rounded-lg">
@@ -387,7 +517,7 @@ const payload = {
                     <p><strong>Serviços:</strong> {selectedServicesData.map(s => s.nomeServico).join(', ')}</p>
                     <p><strong>Valor Total:</strong> {formatCurrency(totalPrice)}</p>
                     <p><strong>Data:</strong> {selectedDate ? formatDate(selectedDate) : "Não selecionada"}</p>
-                    <p><strong>Horário:</strong> {selectedTime}</p>
+                    <p><strong>Horário:</strong> {selectedTime?.horarioString}</p> {/* Mostra "10:30" */}
                   </div>
                 </div>
               </div>
@@ -417,8 +547,9 @@ const payload = {
                 <Button
                   onClick={handleConfirm}
                   className="bg-yellow-400 text-black font-semibold hover:bg-yellow-300"
+                  disabled={isConfirming} // Desativa o botão ao confirmar
                 >
-                  Confirmar Agendamento
+                  {isConfirming ? "Confirmando..." : "Confirmar Agendamento"}
                 </Button>
               )}
             </div>
@@ -430,3 +561,5 @@ const payload = {
 };
 
 export default Agendamento;
+
+

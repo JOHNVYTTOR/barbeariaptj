@@ -14,8 +14,8 @@ interface Produto {
   nomeProduto: string;
   descricao: string;
   preco: number;
-  stock: number;
-  imagemUrl: string;
+  estoque: number;
+  imgUrl: string;
 }
 
 interface ProductCarouselProps {
@@ -45,7 +45,7 @@ export function ProductCarousel({ products }: ProductCarouselProps) {
                 {/* Imagem com overlay degradê */}
                 <CardContent className="relative h-[300px] overflow-hidden"> {/* altura aumentada */}
                   <img
-                    src={product.imagemUrl}
+                    src={product.imgUrl}
                     alt={product.nomeProduto}
                     className="absolute top-0 left-0 w-full h-full object-cover transform scale-105 transition-transform duration-500 hover:scale-115"
                   />

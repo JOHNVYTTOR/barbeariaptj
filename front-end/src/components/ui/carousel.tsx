@@ -176,14 +176,29 @@ const CarouselItem = React.forwardRef<
 >(({ className, ...props }, ref) => {
   const { orientation } = useCarousel()
 
+  /**
+   * NOTE:
+   * - adicionei classes Tailwind para o efeito de hover/elevação diretamente no wrapper do item.
+   * - adicionei `active:translate-y-1` para que em dispositivos touch haja feedback ao tocar.
+   * - preservei as classes originais de layout (min-w-0, shrink-0, basis-full) para compatibilidade com Embla.
+   */
   return (
     <div
       ref={ref}
       role="group"
       aria-roledescription="slide"
       className={cn(
+        // layout base
         "min-w-0 shrink-0 grow-0 basis-full",
+        // espaçamento dependendo da orientação
         orientation === "horizontal" ? "pl-4" : "pt-4",
+        // efeitos visuais adicionados:
+        // - transform + transição
+        // - hover / active para toque
+        "transform transition-transform duration-300 cursor-pointer",
+        "hover:-translate-y-2 hover:scale-105 hover:shadow-xl",
+        // toque mais sutil para dispositivos móveis
+        "active:translate-y-1",
         className
       )}
       {...props}

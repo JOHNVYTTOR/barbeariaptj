@@ -1,27 +1,69 @@
+import { useState, useEffect } from 'react';
 import { Navigation } from "@/components/ui/navigation";
 import { HeroCarousel } from "@/components/ui/lojass/HeroCarousel";
 import { ProductCarousel } from "@/components/ui/lojass/ProductCarousel";
-import pomadaImg from "@/assets/pomada_cabelo.png"; 
-import pomadaImg02 from "@/assets/produtoLoja02.png"; 
-import pomadaImg03 from "@/assets/produtoLoja03.png"; 
-import pomadaImg04 from "@/assets/produtoLoja04.png"; 
+import { api } from '../api.ts'; // Importa a instância da API
 
-// Dados de exemplo (interface igual à do ProductCarousel)
-const exampleProducts = [
-  { idProduto: 1, nomeProduto: "Pomada Capilar", descricao: "Desc", preco: 25.9, stock: 10, imagemUrl: pomadaImg },
-  { idProduto: 2, nomeProduto: "Pomada Exemplo 2", descricao: "Desc", preco: 30.0, stock: 5, imagemUrl: pomadaImg02 },
-  { idProduto: 3, nomeProduto: "Pomada Exemplo 3", descricao: "Desc", preco: 28.5, stock: 8, imagemUrl: pomadaImg03 },
-  { idProduto: 4, nomeProduto: "Pomada Exemplo 4", descricao: "Desc", preco: 22.0, stock: 12, imagemUrl: pomadaImg04},
-];
-
+// --- Interface para o Produto ---
+// (Baseada nos seus 'exampleProducts')
+interface Produto {
+  idProduto: number;
+  nomeProduto: string;
+  descricao: string;
+  preco: number;
+  estoque: number;
+  imgUrl: any; // ALTERADO: de 'string' para 'any' para corrigir o erro de tipo
+}
 
 const Loja = () => {
+  // --- Estados ---
+  const [products, setProducts] = useState<Produto[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  // --- Efeito para Buscar Dados ---
+  useEffect(() => {
+    const fetchProducts = async () => {
+      try {
+        setIsLoading(true);
+        // Presume que o endpoint de produtos no backend é '/produtos'
+        const response = await api.get('/produtos'); 
+        setProducts(response.data);
+        setError(null);
+      } catch (err) {
+        console.error("Erro ao buscar produtos:", err);
+        setError("Não foi possível carregar os produtos. Tente novamente mais tarde.");
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    fetchProducts();
+  }, []); // O array vazio [] garante que isso rode apenas uma vez
+
+  // --- Renderização Condicional do Carrossel ---
+  const renderProductCarousel = () => {
+    if (isLoading) {
+      return <div className="text-center p-10 text-white">Carregando produtos...</div>;
+    }
+
+    if (error) {
+      return <div className="text-center p-10 text-red-400">{error}</div>;
+    }
+
+    if (products.length === 0) {
+      return <div className="text-center p-10 text-gray-400">Nenhum produto encontrado.</div>;
+    }
+
+    // Passa os produtos buscados do backend para o carrossel
+    return <ProductCarousel products={products}/>; 
+  };
+
   return (
     <div className="min-h-screen bg-barbershop-darker">
       <Navigation />
       <HeroCarousel /> 
-      {/* --- Passando os dados de exemplo --- */}
-      <ProductCarousel products={exampleProducts} /> 
+      {renderProductCarousel()}
     </div>
   );
 };

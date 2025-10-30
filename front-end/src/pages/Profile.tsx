@@ -60,17 +60,6 @@ export default function Profile() {
 
         <form onSubmit={handleSubmit}>
           <CardContent className="space-y-4">
-            
-              {/* Label para abrir seletor de arquivo */}
-              <label className="cursor-pointer text-primary hover:underline">
-                Escolher arquivo
-                <Input
-                  type="file"
-                  accept="image/*"
-                  onChange={handleFileChange}
-                  className="hidden"
-                />
-              </label>
             <div>
               <Label htmlFor="nomeUsuario">Nome</Label>
               <Input
@@ -78,7 +67,7 @@ export default function Profile() {
                 name="nomeUsuario"
                 value={formData.nomeUsuario}
                 onChange={handleChange}
-                placeholder="Seu nome completo"
+                placeholder="Seu nome"
                 required
               />
             </div>

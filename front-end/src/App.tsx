@@ -9,11 +9,12 @@ import Loja from "./pages/Loja";
 import Login from "./pages/Login";
 import Cadastro from "./pages/Cadastro";
 import Dashboard from "./pages/Dashboard";
-import NotFound from "./pages/NotFound";
 import Unauthorized from "./pages/Unauthorized";
 import Profile from "./pages/profile"; // ✅ Importa a página de perfil
 import { Navigation } from "@/components/ui/navigation"; // ✅ Importa o Navigation
 import { SidebarProvider } from "@/components/ui/sidebar";
+import NotFound from "./pages/NotFound";
+
 
 const App = () => {
   const { user, login } = useAuth(); // Usuário autenticado

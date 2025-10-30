@@ -38,7 +38,8 @@ export const Navigation = () => {
         isScrolled ? "bg-black/50 backdrop-blur-lg" : "bg-transparent"
       }`}
     >
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+      {/* 👇 Deslocamento suave para a direita */}
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 translate-x-4">
         <div className="flex justify-between h-20 items-center">
           {/* Logo no mobile */}
           <div className="md:hidden flex-1">
