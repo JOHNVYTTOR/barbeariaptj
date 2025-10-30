@@ -1,12 +1,14 @@
 import { useState, useEffect } from "react";
 import { Link, useLocation } from "react-router-dom";
 import { Button } from "./button";
-import { Menu, X, User } from "lucide-react";
-import logoImage from "@/assets/logo.png";
-import { useAuth } from "@/hooks/useAuth"; // ✅ Importa hook de autenticação
+import { Menu, X, User, ShoppingCart } from "lucide-react"; // <-- 1. Importa Ícone do Carrinho
+import logoImage from "../../assets/logo.png"; // <-- Caminho corrigido
+import { useAuth } from "../../hooks/useAuth"; // <-- Caminho corrigido
+import { useCart } from "../../hooks/CartContext"; // <-- 2. Importa Hook do Carrinho (Caminho corrigido)
 
 export const Navigation = () => {
-  const { user } = useAuth(); // ✅ Pega usuário logado
+  const { user } = useAuth();
+  const { cartItems } = useCart(); // <-- 3. Pega os itens do carrinho
   const [isOpen, setIsOpen] = useState(false);
   const [isScrolled, setIsScrolled] = useState(false);
   const location = useLocation();
@@ -31,6 +33,12 @@ export const Navigation = () => {
     window.addEventListener("scroll", handleScroll);
     return () => window.removeEventListener("scroll", handleScroll);
   }, []);
+
+  // --- 4. Calcula o total de itens no carrinho ---
+  const totalItemsInCart = cartItems.reduce(
+    (total, item) => total + item.quantity,
+    0
+  );
 
   return (
     <nav
@@ -87,18 +95,37 @@ export const Navigation = () => {
             ))}
           </div>
 
-          {/* Lado direito (perfil e login) */}
+          {/* Lado direito (perfil, carrinho e login) */}
           <div className="flex items-center flex-1 justify-end space-x-3">
-            {/* Ícone de perfil linkado corretamente */}
-            <Link
-              to="/profile"
-              className="hidden md:flex text-white hover:text-primary transition-colors"
-              title="Meu Perfil"
-            >
-              <User size={24} />
-            </Link>
+            {/* --- 5. Ícone do Carrinho (Desktop) — aparece SOMENTE se estiver logado --- */}
+            {user && (
+              <Link
+                to="/carrinho"
+                className="hidden md:flex text-white hover:text-primary transition-colors relative"
+                title="Carrinho"
+              >
+                <ShoppingCart size={24} />
+                {totalItemsInCart > 0 && (
+                  <span className="absolute -top-2 -right-2 bg-red-500 text-white text-xs font-bold rounded-full h-5 w-5 flex items-center justify-center">
+                    {totalItemsInCart}
+                  </span>
+                )}
+              </Link>
+            )}
+            {/* --- Fim da alteração 5 --- */}
 
-            {/* Botão Entrar (só aparece se NÃO estiver logado) */}
+            {/* Ícone de perfil — aparece SOMENTE se estiver logado */}
+            {user && (
+              <Link
+                to="/profile"
+                className="hidden md:flex text-white hover:text-primary transition-colors"
+                title="Meu Perfil"
+              >
+                <User size={24} />
+              </Link>
+            )}
+
+            {/* Botão Entrar — aparece SOMENTE se NÃO estiver logado */}
             {!user && (
               <div className="hidden md:block">
                 <Link to="/login">
@@ -146,16 +173,36 @@ export const Navigation = () => {
               </Link>
             ))}
 
-            {/* Ícone de perfil também no menu mobile */}
-            <Link
-              to="/profile"
-              className="flex items-center justify-center gap-2 text-white hover:text-primary mt-2"
-              onClick={() => setIsOpen(false)}
-            >
-              <User size={20} /> Meu Perfil
-            </Link>
+            {/* --- 6. Ícone do Carrinho (Mobile) — aparece SOMENTE se estiver logado --- */}
+            {user && (
+              <Link
+                to="/carrinho"
+                className="flex items-center justify-center gap-2 text-white hover:text-primary mt-2"
+                onClick={() => setIsOpen(false)}
+              >
+                <ShoppingCart size={20} />
+                Carrinho
+                {totalItemsInCart > 0 && (
+                  <span className="ml-1 bg-red-500 text-white text-xs font-bold rounded-full h-5 w-5 flex items-center justify-center">
+                    {totalItemsInCart}
+                  </span>
+                )}
+              </Link>
+            )}
+            {/* --- Fim da alteração 6 --- */}
 
-            {/* Botão Entrar Mobile (só aparece se NÃO estiver logado) */}
+            {/* Ícone de perfil — só aparece se estiver logado */}
+            {user && (
+              <Link
+                to="/profile"
+                className="flex items-center justify-center gap-2 text-white hover:text-primary mt-2"
+                onClick={() => setIsOpen(false)}
+              >
+                <User size={20} /> Meu Perfil
+              </Link>
+            )}
+
+            {/* Botão Entrar Mobile — só aparece se NÃO estiver logado */}
             {!user && (
               <div className="border-t border-border pt-4 mt-2">
                 <Link to="/login">

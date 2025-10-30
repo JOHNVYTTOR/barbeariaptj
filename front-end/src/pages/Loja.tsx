@@ -1,18 +1,18 @@
 import { useState, useEffect } from 'react';
-import { Navigation } from "@/components/ui/navigation";
-import { HeroCarousel } from "@/components/ui/lojass/HeroCarousel";
-import { ProductCarousel } from "@/components/ui/lojass/ProductCarousel";
-import { api } from '../api.ts'; // Importa a instância da API
+import { Navigation } from "../components/ui/navigation"; // Corrigido
+import { HeroCarousel } from "../components/ui/lojass/HeroCarousel"; // Corrigido
+import { ProductCarousel } from "../components/ui/lojass/ProductCarousel"; // Corrigido
+import { api } from '../api.ts'; // Corrigido
 
 // --- Interface para o Produto ---
-// (Baseada nos seus 'exampleProducts')
+// Sincronizada com o DashboardAdmin.tsx
 interface Produto {
   idProduto: number;
   nomeProduto: string;
   descricao: string;
   preco: number;
   estoque: number;
-  imgUrl: any; // ALTERADO: de 'string' para 'any' para corrigir o erro de tipo
+  imgUrl: string;
 }
 
 const Loja = () => {
@@ -69,3 +69,5 @@ const Loja = () => {
 };
 
 export default Loja;
+
+

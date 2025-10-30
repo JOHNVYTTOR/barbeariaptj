@@ -7,15 +7,19 @@ import {
 } from "@/components/ui/carousel";
 import { Card, CardContent, CardFooter } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Link } from "react-router-dom";
+// import { Link } from "react-router-dom"; // Link não é mais usado aqui
+import { useCart } from "@/hooks/CartContext"; // <-- 1. Importa o Hook do Carrinho
+import { toast } from "sonner"; // <-- 2. Importa o toast para notificação
 
+// --- Interface para o Produto ---
+// ATUALIZADA para bater com o DashboardAdmin e a API
 interface Produto {
   idProduto: number;
   nomeProduto: string;
   descricao: string;
   preco: number;
-  estoque: number;
-  imgUrl: string;
+  estoque: number;     // Corrigido de 'estoque'
+  imgUrl: string; // Corrigido de 'imgUrl'
 }
 
 interface ProductCarouselProps {
@@ -24,6 +28,14 @@ interface ProductCarouselProps {
 
 export function ProductCarousel({ products }: ProductCarouselProps) {
   if (!products || products.length === 0) return null;
+
+  // --- 3. Pega a função de adicionar ao carrinho ---
+  const { addItem } = useCart();
+
+  const handleAddToCart = (product: Produto) => {
+    addItem(product, 1);
+    toast.success(`${product.nomeProduto} adicionado ao carrinho!`);
+  };
 
   return (
     <Carousel
@@ -45,7 +57,7 @@ export function ProductCarousel({ products }: ProductCarouselProps) {
                 {/* Imagem com overlay degradê */}
                 <CardContent className="relative h-[300px] overflow-hidden"> {/* altura aumentada */}
                   <img
-                    src={product.imgUrl}
+                    src={product.imgUrl} // <-- 4. Corrigido de 'imgUrl'
                     alt={product.nomeProduto}
                     className="absolute top-0 left-0 w-full h-full object-cover transform scale-105 transition-transform duration-500 hover:scale-115"
                   />
@@ -64,13 +76,15 @@ export function ProductCarousel({ products }: ProductCarouselProps) {
                     R$ {product.preco.toFixed(2)}
                   </p>
 
-                  {/* Botão glassmorphism */}
+                  {/* --- 5. Botão "Ver Produto" alterado --- */}
                   <Button
-                    asChild
+                    onClick={() => handleAddToCart(product)} // Chama a função do carrinho
                     className="w-full mt-2 bg-white/10 backdrop-blur-sm border border-white/20 text-white hover:bg-yellow-400 hover:text-black transition-all duration-300"
                   >
-                    <Link to={`/produto/${product.idProduto}`}>Ver Produto</Link>
+                    Adicionar ao Carrinho
                   </Button>
+                  {/* --- Fim da alteração 5 --- */}
+
                 </CardFooter>
               </Card>
             </div>

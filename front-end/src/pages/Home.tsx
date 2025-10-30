@@ -15,6 +15,7 @@ import haircutImage from "@/assets/navalhinha_img.jpg";
 import completeImage from "@/assets/bigode_img.jpg";
 import mustacheImage from "@/assets/tudo_img.jpg";
 import { useState } from "react";
+import { Link } from "react-router-dom";
 
 const Home = () => {
   interface Service {
@@ -175,12 +176,14 @@ const Home = () => {
                   </p>
 
                   <div className="pt-4">
+                    <Link to="/agendamento">
                     <Button
                       size="lg"
                       className="bg-yellow-500 text-black hover:bg-yellow-400 px-10 py-3 font-medium transition-all"
-                    >
+                      >
                       Agendar
                     </Button>
+                    </Link>
                   </div>
                 </div>
               </motion.div>
