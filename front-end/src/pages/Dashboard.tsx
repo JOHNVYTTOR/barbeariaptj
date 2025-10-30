@@ -20,7 +20,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Calendar } from '@/components/ui/calendar';
 import { Switch } from '@/components/ui/switch';
-import { Sidebar } from '@/components/ui/sidebar'; // Importa a Sidebar
+// import { Sidebar } from '@/components/ui/sidebar'; // Removido (correto)
 import { toast } from "sonner";
 import { api } from '@/api'; // Importa a instância configurada do Axios
 import { format } from 'date-fns'; // Para formatar a data para a API
@@ -33,7 +33,7 @@ interface TipoUsuario {
 }
 
 interface Usuario {
-  idUsuario: number;
+  id: number;
   nome: string;
   email: string;
   cpf: string;
@@ -48,16 +48,12 @@ interface Servico {
   duracao: number; // em minutos
 }
 
-// ===== ALTERAÇÃO 1: Interface do Produto atualizada =====
 interface Produto {
-  idProduto: number;
-  nomeProduto: string; // ALTERADO: de 'nome' para 'nomeProduto' (padrão da Loja.tsx)
-  descricao: string;   // ADICIONADO
+  id: number;
+  nome: string;
   preco: number;
-  estoque: number;     // ALTERADO: de 'estoque' para 'stock' (padrão da Loja.tsx)
-  imgUrl: string;   // ADICIONADO
+  estoque: number;
 }
-// ===== FIM DA ALTERAÇÃO 1 =====
 
 interface Agendamento {
   idAgendamento: number;
@@ -72,92 +68,7 @@ interface HorarioDisponivel {
   horarios: string; // Formato HH:MM
   disponivel: boolean;
   data: Date;
-  isBooked?: boolean; // Flag temporária da UI
 }
-
-// --- FUNÇÃO GERADORA DE TEMPLATE ---
-/**
- * Gera um template de horários padrão para um dia específico.
- * @param selectedDate O dia para o qual gerar os horários.
- * @returns Um array de objetos HorarioDisponivel (sem ID).
- */
-const generateDailyTemplate = (selectedDate: Date): HorarioDisponivel[] => {
-  const template: HorarioDisponivel[] = [];
-  const date = new Date(selectedDate); // Clona a data
-
-  // Helper para criar o objeto HorarioDisponivel
-  const createEntry = (h: number, m: number): HorarioDisponivel => {
-    const d = new Date(date);
-    d.setHours(h, m, 0, 0); // Define a hora local
-
-    // --- CORREÇÃO DO FUSO HORÁRIO ---
-    // Precisamos formatar a string no formato ISO LOCAL, sem converter para UTC.
-    // d.toISOString() converteria 07:30-03:00 para 10:30Z, o que estava causando o bug.
-    
-    // Formata a data (YYYY-MM-DD)
-    const yyyy = d.getFullYear();
-    const mm = String(d.getMonth() + 1).padStart(2, '0'); // Mês é 0-indexado
-    const dd = String(d.getDate()).padStart(2, '0');
-    
-    // Formata a hora (HH:mm:ss)
-    const hh = String(d.getHours()).padStart(2, '0');
-    const min = String(d.getMinutes()).padStart(2, '0');
-    const ss = String(d.getSeconds()).padStart(2, '0');
-
-    // Cria a string no formato YYYY-MM-DDTHH:mm:ss
-    const isoLocalString = `${yyyy}-${mm}-${dd}T${hh}:${min}:${ss}`;
-    // --- FIM DA CORREÇÃO ---
-
-    return {
-      idHorarioDisponivel: null, // É nulo pois ainda não foi salvo no DB
-      horarios: isoLocalString,   // O backend deve receber o formato ISO string LOCAL
-      disponivel: true,           // Padrão é disponível
-      data: date,                 // A data (usada na interface, mas 'horarios' é o principal)
-      isBooked: false             // Padrão (não agendado)
-    };
-  };
-
-  // Helper para incrementar 45 minutos
-  const incrementTime = (h: number, m: number): {h: number, m: number} => {
-      m += 45;
-      if (m >= 60) {
-        h += 1;
-        m -= 60;
-      }
-      return {h, m};
-  };
-
-  // --- Sessão da Manhã ---
-  // Começa 07:30. Termina antes das 12:40.
-  let h = 7;
-  let m = 30;
-  const breakStartH = 12;
-  const breakStartM = 40;
-  
-  while (h < breakStartH || (h === breakStartH && m < breakStartM)) {
-    template.push(createEntry(h, m));
-    const next = incrementTime(h, m);
-    h = next.h;
-    m = next.m;
-  }
-  
-  // --- Sessão da Tarde ---
-  // Começa 13:40. Termina 20:00 (último horário de início é 19:40).
-  h = 13;
-  m = 40;
-  const endTimeH = 20; // 20:00
-  const endTimeM = 0;
-  
-  while (h < endTimeH || (h === endTimeH && m <= endTimeM)) {
-    template.push(createEntry(h, m));
-    const next = incrementTime(h, m);
-    h = next.h;
-    m = next.m;
-  }
-  
-  return template;
-};
-
 
 // --- Componente Principal do Dashboard ---
 const Dashboard = () => {
@@ -175,18 +86,16 @@ const Dashboard = () => {
   const [servicoEditando, setServicoEditando] = useState<Partial<Servico> | null>(null); // Usar Partial para formulário
   const [produtoEditando, setProdutoEditando] = useState<Partial<Produto> | null>(null);
   const [dataSelecionada, setDataSelecionada] = useState<Date | undefined>(new Date());
-  // const [novoHorario, setNovoHorario] = useState(""); // Removido
+  const [novoHorario, setNovoHorario] = useState("");
 
   // --- Funções de Busca (Fetch) ---
   const fetchAgendamentos = useCallback(async () => {
     try {
       const response = await api.get('/agendamentos'); // Endpoint do backend
       setAgendamentos(response.data);
-      return response.data; // <-- Retorna os dados
     } catch (error) {
       console.error("Erro fetchAgendamentos:", error);
       toast.error('Erro ao buscar agendamentos.');
-      return []; // <-- Retorna vazio
     }
   }, []);
 
@@ -221,133 +130,62 @@ const Dashboard = () => {
     }
   }, []);
 
-  const fetchHorarios = useCallback(async (data: Date, currentAgendamentos: Agendamento[]) => {
-    let horariosDoDia: HorarioDisponivel[] = [];
-    let errorOccurred = false;
-
-    try {
-      const dataFormatada = format(data, 'yyyy-MM-dd');
-      const response = await api.get(`/horarios/disponiveis/${dataFormatada}`);
-      
-      if (response.data && response.data.length > 0) {
-        // 1. O dia já tem horários salvos no DB
-        horariosDoDia = response.data;
-      } else {
-        // 2. Dia sem horários (200 OK, mas array vazio). Geramos o template.
-        horariosDoDia = generateDailyTemplate(data);
-      }
-    } catch (error: any) {
-      if (error.response?.status === 404) {
-        // 3. Dia sem horários (404 Not Found). Geramos o template.
-        horariosDoDia = generateDailyTemplate(data);
-      } else {
-        // 4. Erro real
-        errorOccurred = true;
-        setHorarios([]);
-        console.error("Erro fetchHorarios:", error);
-        toast.error('Erro ao buscar horários.');
-      }
-    }
-    
-    if (!errorOccurred) {
-      // --- Sincronização com Agendamentos (Lógica da etapa anterior) ---
-      const horariosAgendados = new Set(
-        currentAgendamentos // Usamos o parâmetro 'currentAgendamentos'
-          .filter(ag => ag.status !== 'Cancelado')
-          .map(ag => new Date(ag.dataHora).toISOString()) 
-      );
-
-      const horariosAtualizados = horariosDoDia.map(h => {
-        const horarioIso = new Date(h.horarios).toISOString();
-        const estaAgendado = horariosAgendados.has(horarioIso);
-
-        return {
-          ...h,
-          // Se está agendado, força 'disponivel: false'
-          disponivel: estaAgendado ? false : h.disponivel, 
-          // Flag para a UI travar o switch
-          isBooked: estaAgendado 
-        };
-      })
-      // Ordena os horários (garante que o template e os dados do DB fiquem na ordem certa)
-      .sort((a, b) => new Date(a.horarios).getTime() - new Date(b.horarios).getTime());
-
-      setHorarios(horariosAtualizados);
-    }
-  }, []); 
+  const fetchHorarios = useCallback(async (data: Date) => { try { const dataFormatada = format(data,
+'yyyy-MM-dd'); const response = await api.get(`/horarios/disponiveis/${dataFormatada}`);
+setHorarios(response.data); } catch (error: any) { setHorarios([]); if (error.response?.status !== 404)
+{ console.error("Erro fetchHorarios:", error); toast.error('Erro ao buscar horários.'); } } }, []);
 
 
   // --- Efeito de Carregamento Inicial ---
   useEffect(() => {
     const loadDashboardData = async () => {
       setLoading(true);
-      // Espere os agendamentos e pegue o retorno
-      const [agendamentosData] = await Promise.all([
+      await Promise.all([
         fetchAgendamentos(),
         fetchServicos(),
         fetchProdutos(),
         fetchClientes(),
+        // Carrega horários da data atual no início
+        dataSelecionada ? fetchHorarios(dataSelecionada) : Promise.resolve()
       ]);
-      
-      // Agora chame fetchHorarios passando os agendamentos
-      if (dataSelecionada) {
-          // Note que 'fetchHorarios' não está mais no Promise.all
-          await fetchHorarios(dataSelecionada, agendamentosData);
-      }
       setLoading(false);
     };
     loadDashboardData();
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []); // Dependências vazias (só roda 1 vez)
+  }, []); // Dependências removidas para rodar só uma vez no mount
 
   // Efeito para recarregar horários quando a data selecionada muda
   useEffect(() => {
     if (dataSelecionada) {
-      // Passe o estado atual de 'agendamentos'
-      fetchHorarios(dataSelecionada, agendamentos);
+      fetchHorarios(dataSelecionada);
     }
-    // Adicione 'agendamentos' na dependência
-  }, [dataSelecionada, fetchHorarios, agendamentos]);
+  }, [dataSelecionada, fetchHorarios]);
 
   // --- Handlers de Ações (CRUD) ---
 
   // Agendamentos
-  // ===== INÍCIO DA MODIFICAÇÃO 1 =====
   const handleUpdateAgendamentoStatus = async (agendamento: Agendamento, status: 'Concluído' | 'Cancelado') => {
     try {
       await api.put(`/agendamentos/${agendamento.idAgendamento}`, { ...agendamento, status: status });
       toast.success(`Agendamento ${status === 'Concluído' ? 'concluído' : 'cancelado'}!`);
-
-      // 1. Rebusca os agendamentos E PEGA O RETORNO
-      const novosAgendamentos = await fetchAgendamentos(); 
-      
-      // 2. Se a data do agendamento alterado é a data selecionada no calendário,
-      // força a re-busca dos horários com a nova lista de agendamentos.
-      if (dataSelecionada && format(new Date(agendamento.dataHora), 'yyyy-MM-dd') === format(dataSelecionada, 'yyyy-MM-dd')) {
-        fetchHorarios(dataSelecionada, novosAgendamentos);
-      }
-
+      fetchAgendamentos(); // Rebusca a lista
     } catch (error) {
       console.error("Erro handleUpdateAgendamentoStatus:", error);
       toast.error('Erro ao atualizar status do agendamento.');
     }
   };
-  // ===== FIM DA MODIFICAÇÃO 1 =====
 
   // Serviços
   const handleSaveServico = async (formData: Partial<Servico>) => {
-    // Validação básica
     if (!formData.nomeServico || !formData.preco || !formData.duracao) {
         toast.error("Preencha todos os campos do serviço.");
         return;
     }
     try {
       if (formData.idServico) {
-        // Editar (PUT)
         await api.put(`/servicos/${formData.idServico}`, formData);
         toast.success('Serviço atualizado com sucesso!');
       } else {
-        // Criar (POST)
         await api.post('/servicos', formData);
         toast.success('Serviço criado com sucesso!');
       }
@@ -359,9 +197,9 @@ const Dashboard = () => {
     }
   };
 
-  const handleDeleteServico = async (idServico:number) => {
+  const handleDeleteServico = async (id: number) => {
     try {
-      await api.delete(`/servicos/${idServico}`);
+      await api.delete(`/servicos/${id}`);
       toast.success('Serviço excluído com sucesso!');
       fetchServicos(); // Rebusca a lista
     } catch (error) {
@@ -371,21 +209,16 @@ const Dashboard = () => {
   };
 
   // Produtos
-  // ===== ALTERAÇÃO 2: Validação atualizada =====
   const handleSaveProduto = async (formData: Partial<Produto>) => {
-    // Validação para os campos novos (e renomeados)
-    if (!formData.nomeProduto || !formData.descricao || formData.preco === undefined || formData.estoque === undefined || !formData.imgUrl) {
+    if (!formData.nome || formData.preco === undefined || formData.estoque === undefined) {
         toast.error("Preencha todos os campos do produto.");
         return;
     }
-  // ===== FIM DA ALTERAÇÃO 2 =====
     try {
-      if (formData.idProduto) {
-        // Editar (PUT)
-        await api.put(`/produtos/${formData.idProduto}`, formData);
+      if (formData.id) {
+        await api.put(`/produtos/${formData.id}`, formData);
         toast.success('Produto atualizado com sucesso!');
       } else {
-        // Criar (POST)
         await api.post('/produtos', formData);
         toast.success('Produto criado com sucesso!');
       }
@@ -397,9 +230,9 @@ const Dashboard = () => {
     }
   };
 
-  const handleDeleteProduto = async (idProduto: number) => {
+  const handleDeleteProduto = async (id: number) => {
     try {
-      await api.delete(`/produtos/${idProduto}`);
+      await api.delete(`/produtos/${id}`);
       toast.success('Produto excluído com sucesso!');
       fetchProdutos(); // Rebusca a lista
     } catch (error) {
@@ -409,9 +242,9 @@ const Dashboard = () => {
   };
 
   // Clientes
-  const handleDeleteCliente = async (idUsuario: number) => {
+  const handleDeleteCliente = async (id: number) => {
     try {
-      await api.delete(`/usuarios/${idUsuario}`);
+      await api.delete(`/usuarios/${id}`);
       toast.success('Cliente excluído com sucesso!');
       fetchClientes(); // Rebusca a lista
     } catch (error) {
@@ -422,56 +255,23 @@ const Dashboard = () => {
 
   // Horários
   const handleToggleHorario = (index: number) => {
-    // Atualiza apenas o estado localmente. O salvamento é feito no botão "Salvar Alterações"
     const novosHorarios = [...horarios];
     novosHorarios[index].disponivel = !novosHorarios[index].disponivel;
     setHorarios(novosHorarios);
   };
 
-  // handleAdicionarHorario removido (template automático)
+  const handleAdicionarHorario = async () => { if (!dataSelecionada) { toast.error("Selecione uma data primeiro.");
+    return; } if (!novoHorario || !/^(?:[01]\d|2[0-3]):[0-5]\d$/.test(novoHorario)) {
+toast.error("Formato inválido. Use HH:MM."); return; } const dataIso = `${format(dataSelecionada,
+'yyyy-MM-dd')}T${novoHorario}:00`; try { await api.post('/horarios', { horarios: dataIso, disponivel:
+true }); toast.success("Horário criado!"); setNovoHorario(""); fetchHorarios(dataSelecionada); }
+catch (error) { console.error("Erro handleAdicionarHorario:", error); toast.error("Erro ao adicionar horário."); } }
 
-  // ===== INÍCIO DA MODIFICAÇÃO 2 =====
-  const handleSalvarHorarios = async () => {
-    if (!dataSelecionada) return;
-
-    // Mapeia todos os horários exibidos na tela
-    const promises = horarios.map(h => {
-      
-      // ESTA É A CORREÇÃO:
-      // Nós DEVEMOS salvar o estado 'disponivel' (seja true ou false)
-      // independentemente de estar agendado (isBooked) ou não.
-      // O 'isBooked' é apenas uma flag visual para travar o switch.
-      // A lógica que força 'disponivel: false' quando 'isBooked: true' 
-      // já foi aplicada em 'fetchHorarios'.
-
-      if (h.idHorarioDisponivel) {
-        // ID Existe: Atualiza (PUT)
-        // Salva o estado atual de 'disponivel' (que será 'false' se estiver agendado)
-        return api.put(`/horarios/${h.idHorarioDisponivel}/disponibilidade`, null, { 
-          params: { disponivel: h.disponivel } 
-        });
-      } else {
-        // ID é nulo (veio do template): Cria (POST)
-        // Salva o estado atual de 'disponivel'
-        return api.post('/horarios', { 
-          horarios: h.horarios, // O ISO String do gerador
-          disponivel: h.disponivel 
-        });
-      }
-    });
-
-    try {
-      await Promise.all(promises);
-      toast.success("Horários atualizados!");
-      // Re-busca os horários. Isso é crucial para que os
-      // horários recém-criados (POST) agora tenham seus IDs.
-      fetchHorarios(dataSelecionada, agendamentos); 
-    } catch (error) {
-      console.error("Erro handleSalvarHorarios:", error);
-      toast.error("Erro ao salvar horários.");
-    }
-  };
-  // ===== FIM DA MODIFICAÇÃO 2 =====
+  const handleSalvarHorarios = async () => { if (!dataSelecionada) return; try { await Promise.all(
+horarios.map(h => api.put(`/horarios/${h.idHorarioDisponivel}/disponibilidade`, null, { params: { disponivel:
+h.disponivel } }) ) ); toast.success("Horários atualizados!"); fetchHorarios(dataSelecionada); } catch
+(error) { console.error("Erro handleSalvarHorarios:", error); toast.error("Erro ao salvar horários."); }
+};
 
   // --- Handlers de UI (Abrir/Fechar Dialogs) ---
   const handleEditarServicoClick = (servico: Servico) => {
@@ -480,7 +280,7 @@ const Dashboard = () => {
   };
 
   const handleNovoServicoClick = () => {
-    setServicoEditando(null); // Limpa para indicar que é um novo serviço
+    setServicoEditando(null);
     setServicoDialogAberto(true);
   };
 
@@ -490,33 +290,45 @@ const Dashboard = () => {
   };
 
   const handleNovoProdutoClick = () => {
-    setProdutoEditando(null); // Limpa para indicar que é um novo produto
+    setProdutoEditando(null);
     setProdutoDialogAberto(true);
   };
 
   // ----- JSX DO DASHBOARD -----
   if (loading && !servicoDialogAberto && !produtoDialogAberto) {
     return (
-      <div className="flex min-h-screen bg-gray-900 text-white items-center justify-center">
-        <Sidebar /> {/* Mantém a Sidebar visível durante o loading */}
-        <main className="flex-1 p-6 md:p-10 text-center">Carregando Dashboard...</main>
-      </div>
+      <main className="flex-1 p-4 md:p-6 text-center text-white">Carregando Dashboard...</main>
     );
   }
 
   return (
-    <div className="flex min-h-screen bg-gray-900 text-white">
-      <Sidebar />
-      <main className="flex-1 p-6 md:p-10 overflow-x-hidden"> {/* Adicionado overflow-x-hidden */}
-        <header className="flex justify-between items-center mb-6">
-          <h1 className="text-3xl font-bold text-yellow-400">Dashboard</h1>
+    // *** MUDANÇA AQUI ***
+    // Padding principal reduzido de 'p-6 md:p-10' para 'p-4 md:p-6'
+    <main className="flex-1 p-4 md:p-6 overflow-x-hidden">
+      {/* Alterado para Grid de 3 colunas para forçar a centralização */}
+      <header className="grid grid-cols-3 items-center mb-4">
+        
+        {/* Coluna 1: Vazia (para balancear) */}
+        <div></div>
+        
+        {/* Coluna 2: Título Centralizado */}
+        <h1 className="text-3xl font-bold text-yellow-400 text-center">
+          Dashboard
+        </h1>
+        
+        {/* Coluna 3: Ícone alinhado à direita */}
+        <div className="flex justify-end">
           <Button variant="ghost" size="icon" className="text-gray-400 hover:text-white">
             <Bell className="h-6 w-6" />
           </Button>
-        </header>
+        </div>
+      </header>
 
-        <Tabs defaultValue="overview" className="w-full">
-          <TabsList className="bg-gray-800 border-gray-700 border mb-4 overflow-x-auto whitespace-nowrap">
+     <Tabs defaultValue="overview" className="w-full">
+        {/* Adicionado 'flex-wrap' para lidar com a quebra de linha em telas menores */}
+        <div className="flex justify-center flex-wrap">
+          {/* Classes 'overflow-x-auto' e 'whitespace-nowrap' REMOVIDAS para tirar a barra de rolagem */}
+          <TabsList className="bg-gray-800 border-gray-700 border mb-4">
             <TabsTrigger value="overview">Visão Geral</TabsTrigger>
             <TabsTrigger value="agendamentos">Agendamentos</TabsTrigger>
             <TabsTrigger value="servicos">Serviços</TabsTrigger>
@@ -524,173 +336,180 @@ const Dashboard = () => {
             <TabsTrigger value="horarios">Horários</TabsTrigger>
             <TabsTrigger value="clientes">Clientes</TabsTrigger>
           </TabsList>
+        </div>
 
-          {/* === Aba: Visão Geral === */}
-          <TabsContent value="overview" className="mt-6">
-            <div className="mb-6">
-              <Card className="bg-gray-800 border-gray-700 text-white max-w-sm">
-                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                  <CardTitle className="text-sm font-medium">Agendamentos Pendentes (Hoje)</CardTitle>
-                  <Check className="h-4 w-4 text-green-500" />
-                </CardHeader>
-                <CardContent>
-                  <div className="text-2xl font-bold">
-                    {agendamentos.filter(a =>
-                      format(new Date(a.dataHora), 'yyyy-MM-dd') === format(new Date(), 'yyyy-MM-dd') &&
-                      a.status === 'Pendente'
-                    ).length}
-                  </div>
-                </CardContent>
-              </Card>
-            </div>
-
-            <div className="mt-8">
-              <Card className="bg-gray-800 border-gray-700 text-white">
-                <CardHeader>
-                  <CardTitle className="text-yellow-400">Próximos Agendamentos (Pendentes)</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <TabelaAgendamentos
-                    data={agendamentos
-                      .filter(a => a.status === 'Pendente')
-                      .sort((a, b) => new Date(a.dataHora).getTime() - new Date(b.dataHora).getTime()) // Ordena por data
-                    }
-                    onUpdateStatus={handleUpdateAgendamentoStatus}
-                  />
-                </CardContent>
-              </Card>
-            </div>
-          </TabsContent>
-
-          {/* === Aba: Agendamentos === */}
-          <TabsContent value="agendamentos" className="mt-6">
+        {/* === Aba: Visão Geral === */}
+        {/* *** MUDANÇA AQUI *** (Margem superior reduzida de 'mt-6' para 'mt-4') */}
+        <TabsContent value="overview" className="mt-4">
+          {/* *** MUDANÇA AQUI *** (Margem inferior reduzida de 'mb-6' para 'mb-4') */}
+          <div className="mb-4">
             <Card className="bg-gray-800 border-gray-700 text-white">
-              <CardHeader className="flex flex-row items-center justify-between">
-                <CardTitle className="text-yellow-400">Gerenciar Agendamentos</CardTitle>
-                {/* Filtro pode ser adicionado aqui */}
+              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                <CardTitle className="text-sm font-medium">Agendamentos Pendentes (Hoje)</CardTitle>
+                <Check className="h-4 w-4 text-green-500" />
               </CardHeader>
               <CardContent>
-                <TabelaAgendamentos data={agendamentos} onUpdateStatus={handleUpdateAgendamentoStatus} />
+                <div className="text-2xl font-bold">
+                  {agendamentos.filter(a =>
+                    format(new Date(a.dataHora), 'yyyy-MM-dd') === format(new Date(), 'yyyy-MM-dd') &&
+                    a.status === 'Pendente'
+                  ).length}
+                </div>
               </CardContent>
             </Card>
-          </TabsContent>
+          </div>
 
-          {/* === Aba: Serviços === */}
-          <TabsContent value="servicos" className="mt-6">
-            <Card className="bg-gray-800 border-gray-700 text-white">
-              <CardHeader className="flex flex-row items-center justify-between">
-                <CardTitle className="text-yellow-400">Gerenciar Serviços</CardTitle>
-                <Button onClick={handleNovoServicoClick} className="bg-yellow-400 text-black hover:bg-yellow-300">
-                  <Plus className="h-4 w-4 mr-2" /> Adicionar Serviço
-                </Button>
-              </CardHeader>
-              <CardContent>
-                <TabelaServicos data={servicos} onEdit={handleEditarServicoClick} onDelete={handleDeleteServico} />
-              </CardContent>
-            </Card>
-          </TabsContent>
-
-          {/* === Aba: Produtos === */}
-          <TabsContent value="produtos" className="mt-6">
-            <Card className="bg-gray-800 border-gray-700 text-white">
-              <CardHeader className="flex flex-row items-center justify-between">
-                <CardTitle className="text-yellow-400">Gerenciar Produtos da Loja</CardTitle>
-                <Button onClick={handleNovoProdutoClick} className="bg-yellow-400 text-black hover:bg-yellow-300">
-                  <Plus className="h-4 w-4 mr-2" /> Adicionar Produto
-                </Button>
-              </CardHeader>
-              <CardContent>
-                {/* ===== ALTERAÇÃO 3: Passa 'onEdit' e 'onDelete' corretos ===== */}
-                <TabelaProdutos data={produtos} onEdit={handleEditarProdutoClick} onDelete={handleDeleteProduto} />
-                {/* ===== FIM DA ALTERAÇÃO 3 ===== */}
-              </CardContent>
-            </Card>
-          </TabsContent>
-
-          {/* === Aba: Horários === */}
-          <TabsContent value="horarios" className="mt-6">
+          {/* *** MUDANÇA AQUI *** (Margem superior reduzida de 'mt-8' para 'mt-6') */}
+          <div className="mt-6">
             <Card className="bg-gray-800 border-gray-700 text-white">
               <CardHeader>
-                <CardTitle className="text-yellow-400">Gerenciar Horários Disponíveis</CardTitle>
+                <CardTitle className="text-yellow-400">Próximos Agendamentos (Pendentes)</CardTitle>
               </CardHeader>
-              <CardContent className="grid md:grid-cols-2 gap-8">
-                <div>
-                  <h3 className="text-lg font-semibold mb-2">Selecione o dia</h3>
-                  <Calendar
-                    mode="single"
-                    selected={dataSelecionada}
-                    onSelect={setDataSelecionada}
-                    className="rounded-md border bg-gray-700 border-gray-600"
-                    locale={ptBR} // Usa localização pt-BR
-                  />
+              <CardContent className="overflow-x-auto">
+                <TabelaAgendamentos
+                  data={agendamentos
+                    .filter(a => a.status === 'Pendente')
+                    .sort((a, b) => new Date(a.dataHora).getTime() - new Date(b.dataHora).getTime())
+                  }
+                  onUpdateStatus={handleUpdateAgendamentoStatus}
+                />
+              </CardContent>
+            </Card>
+          </div>
+        </TabsContent>
+
+        {/* === Aba: Agendamentos === */}
+        <TabsContent value="agendamentos" className="mt-4">
+          <Card className="bg-gray-800 border-gray-700 text-white">
+            <CardHeader className="flex flex-row items-center justify-between">
+              <CardTitle className="text-yellow-400">Gerenciar Agendamentos</CardTitle>
+            </CardHeader>
+            <CardContent className="overflow-x-auto">
+              <TabelaAgendamentos data={agendamentos} onUpdateStatus={handleUpdateAgendamentoStatus} />
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        {/* === Aba: Serviços === */}
+        <TabsContent value="servicos" className="mt-4">
+          <Card className="bg-gray-800 border-gray-700 text-white">
+            <CardHeader className="flex flex-row items-center justify-between">
+              <CardTitle className="text-yellow-400">Gerenciar Serviços</CardTitle>
+              <Button onClick={handleNovoServicoClick} className="bg-yellow-400 text-black hover:bg-yellow-300">
+                <Plus className="h-4 w-4 mr-2" /> Adicionar Serviço
+              </Button>
+            </CardHeader>
+            <CardContent className="overflow-x-auto">
+              <TabelaServicos data={servicos} onEdit={handleEditarServicoClick} onDelete={handleDeleteServico} />
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        {/* === Aba: Produtos === */}
+        <TabsContent value="produtos" className="mt-4">
+          <Card className="bg-gray-800 border-gray-700 text-white">
+            <CardHeader className="flex flex-row items-center justify-between">
+              <CardTitle className="text-yellow-400">Gerenciar Produtos da Loja</CardTitle>
+              <Button onClick={handleNovoProdutoClick} className="bg-yellow-400 text-black hover:bg-yellow-300">
+                <Plus className="h-4 w-4 mr-2" /> Adicionar Produto
+              </Button>
+            </CardHeader>
+            <CardContent className="overflow-x-auto">
+              <TabelaProdutos data={produtos} onEdit={handleEditarProdutoClick} onDelete={handleDeleteProduto} />
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        {/* === Aba: Horários === */}
+        <TabsContent value="horarios" className="mt-4">
+          <Card className="bg-gray-800 border-gray-700 text-white">
+            <CardHeader>
+              <CardTitle className="text-yellow-400">Gerenciar Horários Disponíveis</CardTitle>
+            </CardHeader>
+            {/* *** MUDANÇA AQUI *** (Gap reduzido de 'gap-8' para 'gap-6') */}
+            <CardContent className="grid md:grid-cols-2 gap-6">
+              <div>
+                <h3 className="text-lg font-semibold mb-2">Selecione o dia</h3>
+                <Calendar
+                  mode="single"
+                  selected={dataSelecionada}
+                  onSelect={setDataSelecionada}
+                  className="rounded-md border bg-gray-700 border-gray-600"
+                  locale={ptBR}
+                />
+              </div>
+              <div>
+                <h3 className="text-lg font-semibold mb-2">
+                  Horários de {dataSelecionada ? format(dataSelecionada, 'dd/MM/yyyy') : '...'}
+                </h3>
+                <div className="space-y-3 max-h-64 overflow-y-auto pr-2 mb-4">
+                  {horarios.length > 0 ? horarios.map((h, index) => (
+                    <div key={h.idHorarioDisponivel || `${h.data}-${h.horarios}`} className="flex items-center p-3 bg-gray-700 rounded-md">
+_                      <Label htmlFor={`horario-${h.horarios}`} className="text-base flex-grow">
+                        {new Date(h.horarios).toLocaleString('pt-BR', { dateStyle: 'short', timeStyle: 'short' })}
+                      </Label>
+                      <Switch
+                        id={`horario-${h.horarios}`}
+                        checked={h.disponivel}
+                        onCheckedChange={() => handleToggleHorario(index)}
+                        className="data-[state=checked]:bg-yellow-400"
+                      />
+                    </div>
+                  )) : (
+                    <p className='text-gray-400'>Nenhum horário encontrado ou cadastrado para este dia.</p>
+                  )}
                 </div>
-                <div>
-                  <h3 className="text-lg font-semibold mb-2">
-                    Horários de {dataSelecionada ? format(dataSelecionada, 'dd/MM/yyyy') : '...'}
-                  </h3>
-                  <div className="space-y-3 max-h-64 overflow-y-auto pr-2 mb-4">
-                    {horarios.length > 0 ? horarios.map((h, index) => (
-                      <div key={h.idHorarioDisponivel || `${h.data}-${h.horarios}`} className="flex items-center p-3 bg-gray-700 rounded-md">
-                        <Label 
-                          htmlFor={`horario-${h.horarios}`} 
-                          className={`text-base flex-grow ${h.isBooked ? 'text-gray-400 line-through' : ''}`} // <-- Estilo para horário agendado
-                        >
-                          {new Date(h.horarios).toLocaleString('pt-BR', { dateStyle: 'short', timeStyle: 'short' })}
-                          {h.isBooked && <span className="text-xs ml-2 font-normal">(Agendado)</span>} {/* <-- Indicador textual */}
-                        </Label>
-                        <Switch
-                          id={`horario-${h.horarios}`}
-                          checked={h.disponivel}
-                          onCheckedChange={() => handleToggleHorario(index)}
-                          className="data-[state=checked]:bg-yellow-400"
-                          disabled={h.isBooked} // <-- DESABILITA O SWITCH SE ESTIVER AGENDADO
-                        />
-                      </div>
-                    )) : (
-                      <p className='text-gray-400'>Nenhum horário encontrado ou cadastrado para este dia.</p>
-                    )}
-                  </div>
 
-                  {/* Input de novo horário removido */}
-
-                  <Button onClick={handleSalvarHorarios} className="w-full mt-4 bg-green-500 text-white hover:bg-green-600">
-                    Salvar Alterações nos Horários
+                <div className="flex gap-2 mt-4 pt-4 border-t border-gray-700">
+                  <Input
+                    type="text"
+                    placeholder="Novo horário (ex: 19:30)"
+                    value={novoHorario}
+                    onChange={(e) => setNovoHorario(e.target.value)}
+                    className="bg-gray-700 border-gray-600"
+                  />
+                  <Button onClick={handleAdicionarHorario} className="bg-yellow-400 text-black hover:bg-yellow-300" title="Adicionar novo horário para este dia">
+                    <Plus className="h-4 w-4" />
                   </Button>
                 </div>
-              </CardContent>
-            </Card>
-          </TabsContent>
 
-          {/* === Aba: Clientes === */}
-          <TabsContent value="clientes" className="mt-6">
-            <Card className="bg-gray-800 border-gray-700 text-white">
-              <CardHeader>
-                <CardTitle className="text-yellow-400">Gerenciar Clientes</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <TabelaClientes data={clientes} onDelete={handleDeleteCliente} />
-              </CardContent>
-            </Card>
-          </TabsContent>
-        </Tabs>
+                <Button onClick={handleSalvarHorarios} className="w-full mt-4 bg-green-500 text-white hover:bg-green-600">
+                  Salvar Alterações nos Horários
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
+        </TabsContent>
 
-        {/* --- Dialogs (Pop-ups) --- */}
-        <ServicoDialog
-          key={servicoEditando?.idServico || 'new-servico'} // Força recriação ao mudar o item
-          open={servicoDialogAberto}
-          onOpenChange={setServicoDialogAberto}
-          onSave={handleSaveServico}
-          servico={servicoEditando}
-        />
-        <ProdutoDialog
-          key={produtoEditando?.idProduto || 'new-produto'} // Força recriação ao mudar o item
-          open={produtoDialogAberto}
-          onOpenChange={setProdutoDialogAberto}
-          onSave={handleSaveProduto}
-          produto={produtoEditando}
-        />
-      </main>
-    </div>
+        {/* === Aba: Clientes === */}
+        <TabsContent value="clientes" className="mt-4">
+          <Card className="bg-gray-800 border-gray-700 text-white">
+            <CardHeader>
+              <CardTitle className="text-yellow-400">Gerenciar Clientes</CardTitle>
+            </CardHeader>
+            <CardContent className="overflow-x-auto">
+              <TabelaClientes data={clientes} onDelete={handleDeleteCliente} />
+            </CardContent>
+          </Card>
+        </TabsContent>
+      </Tabs>
+
+      {/* --- Dialogs (Pop-ups) --- */}
+      <ServicoDialog
+        key={servicoEditando?.idServico || 'new-servico'}
+        open={servicoDialogAberto}
+        onOpenChange={setServicoDialogAberto}
+        onSave={handleSaveServico}
+        servico={servicoEditando}
+      />
+      <ProdutoDialog
+        key={produtoEditando?.id || 'new-produto'}
+        open={produtoDialogAberto}
+        onOpenChange={setProdutoDialogAberto}
+        onSave={handleSaveProduto}
+        produto={produtoEditando}
+      />
+    </main>
   );
 };
 
@@ -790,12 +609,11 @@ interface TabelaProdutosProps {
   onEdit: (p: Produto) => void;
   onDelete: (id: number) => void;
 }
-// ===== ALTERAÇÃO 4: Tabela de Produtos atualizada =====
 const TabelaProdutos: React.FC<TabelaProdutosProps> = ({ data, onEdit, onDelete }) => (
   <Table>
     <TableHeader>
       <TableRow className="hover:bg-gray-700 border-gray-700">
-        <TableHead className="text-white">Nome do Produto</TableHead>
+        <TableHead className="text-white">Nome</TableHead>
         <TableHead className="text-white">Preço</TableHead>
         <TableHead className="text-white">Estoque</TableHead>
         <TableHead className="text-right text-white">Ações</TableHead>
@@ -803,15 +621,15 @@ const TabelaProdutos: React.FC<TabelaProdutosProps> = ({ data, onEdit, onDelete 
     </TableHeader>
     <TableBody>
       {data.length > 0 ? data.map((p) => (
-        <TableRow key={p.idProduto} className="hover:bg-gray-700 border-gray-700">
-          <TableCell>{p.nomeProduto}</TableCell>
+        <TableRow key={p.id} className="hover:bg-gray-700 border-gray-700">
+          <TableCell>{p.nome}</TableCell>
           <TableCell>R$ {p.preco.toFixed(2)}</TableCell>
           <TableCell>{p.estoque}</TableCell>
           <TableCell className="text-right space-x-2">
             <Button variant="outline" size="icon" onClick={() => onEdit(p)} className="text-yellow-400 border-yellow-400 hover:bg-yellow-400 hover:text-black" title="Editar Produto">
               <Edit className="h-4 w-4" />
             </Button>
-            <BotaoExcluir onConfirm={() => onDelete(p.idProduto)} />
+            <BotaoExcluir onConfirm={() => onDelete(p.id)} />
           </TableCell>
         </TableRow>
       )) : (
@@ -822,7 +640,6 @@ const TabelaProdutos: React.FC<TabelaProdutosProps> = ({ data, onEdit, onDelete 
     </TableBody>
   </Table>
 );
-// ===== FIM DA ALTERAÇÃO 4 =====
 
 interface TabelaClientesProps {
   data: Usuario[];
@@ -840,12 +657,12 @@ const TabelaClientes: React.FC<TabelaClientesProps> = ({ data, onDelete }) => (
     </TableHeader>
     <TableBody>
       {data.length > 0 ? data.map((c) => (
-        <TableRow key={c.idUsuario} className="hover:bg-gray-700 border-gray-700">
+        <TableRow key={c.id} className="hover:bg-gray-700 border-gray-700">
           <TableCell>{c.nome}</TableCell>
           <TableCell>{c.email}</TableCell>
           <TableCell>{c.telefone}</TableCell>
           <TableCell className="text-right">
-            <BotaoExcluir onConfirm={() => onDelete(c.idUsuario)} />
+            <BotaoExcluir onConfirm={() => onDelete(c.id)} />
           </TableCell>
         </TableRow>
       )) : (
@@ -958,44 +775,24 @@ interface ProdutoDialogProps {
   onSave: (data: Partial<Produto>) => void;
   produto: Partial<Produto> | null;
 }
-// ===== ALTERAÇÃO 5: Formulário de Produto atualizado =====
 const ProdutoDialog: React.FC<ProdutoDialogProps> = ({ open, onOpenChange, onSave, produto }) => {
-  // Estado local para o formulário (campos atualizados)
-  const [formData, setFormData] = useState<Partial<Produto>>({ 
-    idProduto: undefined, 
-    nomeProduto: '', 
-    descricao: '', 
-    preco: 0, 
-    estoque: 0, 
-    imgUrl: '' 
-  });
+  const [formData, setFormData] = useState<Partial<Produto>>({ id: undefined, nome: '', preco: 0, estoque: 0 });
 
   useEffect(() => {
     if (open) {
       if (produto) {
         setFormData(produto);
       } else {
-        // Reset para novo produto (campos atualizados)
-        setFormData({ 
-          idProduto: undefined, 
-          nomeProduto: '', 
-          descricao: '', 
-          preco: 0, 
-          estoque: 0, 
-          imgUrl: '' 
-        });
+        setFormData({ id: undefined, nome: '', preco: 0, estoque: 0 });
       }
     }
   }, [produto, open]);
 
-  // Handle change atualizado para textarea e tipos numéricos corretos
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value, type } = e.target;
     setFormData(prev => ({
       ...prev,
-      [name]: type === 'number' ? 
-        (name === 'preco' ? parseFloat(value) || 0 : parseInt(value, 10) || 0) // preco (float), stock (int)
-        : value
+      [name]: type === 'number' ? parseInt(value, 10) || 0 : value // Use parseInt para estoque
     }));
   };
 
@@ -1009,40 +806,20 @@ const ProdutoDialog: React.FC<ProdutoDialogProps> = ({ open, onOpenChange, onSav
       <DialogContent className="bg-gray-800 border-gray-700 text-white">
         <form onSubmit={handleSubmit}>
           <DialogHeader>
-            <DialogTitle className="text-yellow-400">{produto?.idProduto ? 'Editar Produto' : 'Adicionar Novo Produto'}</DialogTitle>
+            <DialogTitle className="text-yellow-400">{produto?.id ? 'Editar Produto' : 'Adicionar Novo Produto'}</DialogTitle>
           </DialogHeader>
           <div className="grid gap-4 py-4">
             <div className="grid grid-cols-4 items-center gap-4">
               <Label htmlFor="nome-produto" className="text-right">Nome</Label>
-              <Input id="nome-produto" name="nomeProduto" value={formData.nomeProduto} onChange={handleChange} className="col-span-3 bg-gray-700 border-gray-600" required />
+              <Input id="nome-produto" name="nome" value={formData.nome} onChange={handleChange} className="col-span-3 bg-gray-700 border-gray-600" required />
             </div>
-            
-            {/* Campo de Descrição Adicionado */}
-            <div className="grid grid-cols-4 items-center gap-4">
-              <Label htmlFor="descricao-produto" className="text-right">Descrição</Label>
-              <textarea 
-                id="descricao-produto" 
-                name="descricao" 
-                value={formData.descricao} 
-                onChange={handleChange} 
-                className="col-span-3 bg-gray-700 border-gray-600 rounded-md p-2 h-24" // Usei textarea
-                required 
-              />
-            </div>
-            
             <div className="grid grid-cols-4 items-center gap-4">
               <Label htmlFor="preco-produto" className="text-right">Preço (R$)</Label>
               <Input id="preco-produto" name="preco" type="number" step="0.01" value={formData.preco} onChange={handleChange} className="col-span-3 bg-gray-700 border-gray-600" required min="0"/>
             </div>
             <div className="grid grid-cols-4 items-center gap-4">
-              <Label htmlFor="stock-produto" className="text-right">Estoque</Label>
-              <Input id="stock-produto" name="estoque" type="number" value={formData.estoque} onChange={handleChange} className="col-span-3 bg-gray-700 border-gray-600" required min="0"/>
-            </div>
-            
-            {/* Campo de Imagem URL Adicionado */}
-            <div className="grid grid-cols-4 items-center gap-4">
-              <Label htmlFor="imagem-produto" className="text-right">URL da Imagem</Label>
-              <Input id="imagem-produto" name="imgUrl" value={formData.imgUrl} onChange={handleChange} className="col-span-3 bg-gray-700 border-gray-600" required placeholder="https://..."/>
+              <Label htmlFor="estoque-produto" className="text-right">Estoque</Label>
+              <Input id="estoque-produto" name="estoque" type="number" value={formData.estoque} onChange={handleChange} className="col-span-3 bg-gray-700 border-gray-600" required min="0"/>
             </div>
           </div>
           <DialogFooter>
@@ -1056,6 +833,5 @@ const ProdutoDialog: React.FC<ProdutoDialogProps> = ({ open, onOpenChange, onSav
     </Dialog>
   );
 };
-// ===== FIM DA ALTERAÇÃO 5 =====
 
 export default Dashboard;
