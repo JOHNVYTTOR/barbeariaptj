@@ -21,7 +21,7 @@ public class Usuario {
 	private Long idUsuario;
 	
 	@Column(name = "nomeUsuario", nullable = false, length = 100)
-	private String nome;
+	private String nomeUsuario;
 	
 	@Column(name = "cpf", nullable = false, unique = true, length = 11)
 	private String cpf;
@@ -40,10 +40,10 @@ public class Usuario {
 	@JsonIgnoreProperties("usuarios")
 	private TipoUsuario tipoUsuario;
 
-	public Usuario(Long idUsuario, String nome, String cpf, String email, String senha, String telefone, TipoUsuario tipoUsuario) {
+	public Usuario(Long idUsuario, String nomeUsuario, String cpf, String email, String senha, String telefone, TipoUsuario tipoUsuario) {
 		super();
 		this.idUsuario = idUsuario;
-		this.nome = nome;
+		this.nomeUsuario = nomeUsuario;
 		this.cpf = cpf;
 		this.email = email;
 		this.senha = senha;
@@ -64,11 +64,11 @@ public class Usuario {
 	}
 
 	public String getNome() {
-		return nome;
+		return nomeUsuario;
 	}
 
-	public void setNome(String nome) {
-		this.nome = nome;
+	public void setNome(String nomeUsuario) {
+		this.nomeUsuario = nomeUsuario;
 	}
 
 	public String getCpf() {

@@ -1,82 +1,145 @@
-import React from "react";
-import {
-  Carousel,
-  CarouselContent,
-  CarouselItem,
-  CarouselNext,
-  CarouselPrevious,
-} from "@/components/ui/carousel";
-import { Card, CardContent, CardFooter } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
 import { Link } from "react-router-dom";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Award, Instagram, Scissors, Users } from "lucide-react";
 
-interface Produto {
-  idProduto: number;
-  nomeProduto: string;
-  descricao: string;
-  preco: number;
-  stock: number;
-  imagemUrl: string;
-}
+import gabrielPng from "@/assets/gabriel.png";
+import bb01 from "@/assets/bb_01.png";
+import bb02 from "@/assets/bb_02.png";
+import bb03 from "@/assets/bb_03.png";
+import fotoCorte from "@/assets/fotoCorte.jpg";
 
-interface SobreProps {
-  products: Produto[];
-}
-
-const Sobre: React.FC<SobreProps> = ({ products }) => {
-  if (!products || products.length === 0) return null;
+export default function Sobre() {
+  const galleryImages = [
+    { src: bb01, alt: "Interior da barbearia 1" },
+    { src: bb02, alt: "Interior da barbearia 2" },
+    { src: bb03, alt: "Interior da barbearia 3" },
+    { src: fotoCorte, alt: "Corte de cabelo detalhado" },
+  ];
 
   return (
-    <div className="min-h-screen flex flex-col items-center justify-center bg-gray-950 p-6 text-white">
-      <h1 className="text-4xl font-bold mb-8 text-yellow-400">Sobre Nós</h1>
-      <Carousel
-        opts={{ align: "start", loop: products.length > 3 }}
-        className="w-full max-w-6xl"
-      >
-        <CarouselContent>
-          {products.map((product) => (
-            <CarouselItem
-              key={product.idProduto}
-              className="sm:basis-1/2 md:basis-1/3 lg:basis-1/4"
-            >
-              <div className="p-2">
-                <Card className="h-full flex flex-col rounded-3xl overflow-hidden shadow-xl hover:shadow-2xl transition-shadow duration-300 relative bg-gradient-to-b from-gray-900 via-gray-800 to-gray-900">
-                  <CardContent className="relative h-[300px] overflow-hidden">
-                    <img
-                      src={product.imagemUrl}
-                      alt={product.nomeProduto}
-                      className="absolute top-0 left-0 w-full h-full object-cover transform scale-105 transition-transform duration-500 hover:scale-110"
-                    />
-                    <div className="absolute bottom-0 left-0 w-full h-24 bg-gradient-to-t from-black/60 to-transparent flex items-end px-4 pb-2"></div>
-                  </CardContent>
+    <div className="bg-gray-900 text-white min-h-screen">
+      <div className="container mx-auto px-4 py-16">
+        
+        <section className="mb-24 text-center">
+          <h1 className="text-5xl font-bold mb-4 text-yellow-400 tracking-tight">
+            Nossa História
+          </h1>
+          <p className="text-lg text-gray-300 max-w-3xl mx-auto">
+            Mais do que uma barbearia, somos um ponto de encontro para cavalheiros que valorizam a tradição, o estilo e um serviço impecável. Aqui, cada corte é uma obra de arte.
+          </p>
+        </section>
 
-                  <CardFooter className="flex flex-col items-start gap-2 pt-4 mt-auto px-4">
-                    <h3
-                      className="font-bold text-lg text-white truncate w-full"
-                      title={product.nomeProduto}
-                    >
-                      {product.nomeProduto}
-                    </h3>
-                    <p className="font-semibold text-xl text-yellow-400">
-                      R$ {product.preco.toFixed(2)}
-                    </p>
-                    <Button
-                      asChild
-                      className="w-full mt-2 bg-white/10 backdrop-blur-sm border border-white/20 text-white hover:bg-yellow-400 hover:text-black transition-all duration-300"
-                    >
-                      <Link to={`/produto/${product.idProduto}`}>Ver Produto</Link>
-                    </Button>
-                  </CardFooter>
-                </Card>
+        <section className="mb-24">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-12 items-center">
+            <div className="flex justify-center">
+              <img
+                src={gabrielPng}
+                alt="Barbeiro Gabriel"
+                className="rounded-full w-80 h-80 md:w-96 md:h-96 object-cover border-4 border-yellow-400 shadow-2xl"
+              />
+            </div>
+            <div className="text-center md:text-left">
+              <h2 className="text-4xl font-bold mb-4">
+                Conheça o Mestre
+              </h2>
+              <p className="text-gray-300 text-lg mb-6">
+                Com mais de uma década de experiência, Gabriel (ou "Chefe") não é apenas um barbeiro, é um artista. Especialista em cortes clássicos e tendências modernas, ele dedica seu tempo a entender o estilo de cada cliente, garantindo um resultado que vai além das expectativas.
+              </p>
+              <div className="flex justify-center md:justify-start space-x-4">
+                <a
+                  href="#"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-gray-400 hover:text-yellow-400 transition-colors"
+                >
+                  <Instagram size={28} />
+                </a>
               </div>
-            </CarouselItem>
-          ))}
-        </CarouselContent>
-        <CarouselPrevious className="ml-12 text-yellow-400" />
-        <CarouselNext className="mr-12 text-yellow-400" />
-      </Carousel>
+            </div>
+          </div>
+        </section>
+
+        <section className="mb-24">
+          <h2 className="text-4xl font-bold text-center mb-12">
+            Nossos Valores
+          </h2>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+            <Card className="bg-gray-800 border-gray-700 text-white rounded-2xl shadow-xl transform hover:scale-105 transition-transform duration-300">
+              <CardHeader className="items-center">
+                <div className="p-4 bg-yellow-400 rounded-full mb-4">
+                  <Scissors size={32} className="text-gray-900" />
+                </div>
+                <CardTitle className="text-2xl font-bold">Tradição</CardTitle>
+              </CardHeader>
+              <CardContent className="text-center text-gray-300">
+                Respeitamos as técnicas clássicas da barbearia, trazendo a navalha e a tesoura para o centro da nossa arte.
+              </CardContent>
+            </Card>
+
+            <Card className="bg-gray-800 border-gray-700 text-white rounded-2xl shadow-xl transform hover:scale-105 transition-transform duration-300">
+              <CardHeader className="items-center">
+                <div className="p-4 bg-yellow-400 rounded-full mb-4">
+                  <Award size={32} className="text-gray-900" />
+                </div>
+                <CardTitle className="text-2xl font-bold">Qualidade</CardTitle>
+              </CardHeader>
+              <CardContent className="text-center text-gray-300">
+                Utilizamos apenas os melhores produtos e ferramentas do mercado para garantir um acabamento perfeito em cada serviço.
+              </CardContent>
+            </Card>
+
+            <Card className="bg-gray-800 border-gray-700 text-white rounded-2xl shadow-xl transform hover:scale-105 transition-transform duration-300">
+              <CardHeader className="items-center">
+                <div className="p-4 bg-yellow-400 rounded-full mb-4">
+                  <Users size={32} className="text-gray-900" />
+                </div>
+                <CardTitle className="text-2xl font-bold">Comunidade</CardTitle>
+              </CardHeader>
+              <CardContent className="text-center text-gray-300">
+                Acreditamos que a barbearia é um espaço de diálogo, amizade e troca de ideias. Sinta-se em casa.
+              </CardContent>
+            </Card>
+          </div>
+        </section>
+
+        <section className="mb-24">
+          <h2 className="text-4xl font-bold text-center mb-12">
+            Nosso Espaço
+          </h2>
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+            {galleryImages.map((image, index) => (
+              <div
+                key={index}
+                className="overflow-hidden rounded-2xl shadow-xl"
+              >
+                <img
+                  src={image.src}
+                  alt={image.alt}
+                  className="w-full h-full object-cover transform hover:scale-110 transition-transform duration-500"
+                />
+              </div>
+            ))}
+          </div>
+        </section>
+
+        <section className="text-center bg-gray-800 p-12 rounded-2xl shadow-2xl">
+          <h2 className="text-3xl font-bold mb-4">
+            Pronto para transformar seu estilo?
+          </h2>
+          <p className="text-lg text-gray-300 mb-8">
+            Sua cadeira está esperando por você. Agende seu horário e viva a experiência completa.
+          </p>
+          <Button
+            asChild
+            size="lg"
+            className="bg-yellow-400 text-gray-900 font-bold text-lg px-8 py-6 hover:bg-yellow-500 transition-all rounded-xl"
+          >
+            <Link to="/agendamento">Agendar Horário</Link>
+          </Button>
+        </section>
+        
+      </div>
     </div>
   );
-};
-
-export default Sobre;
+}

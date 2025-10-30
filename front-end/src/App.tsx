@@ -34,7 +34,7 @@ const App = () => {
             {/* Rotas públicas */}
             <Route path="/" element={<Home />} />
             <Route path="/agendamento" element={<Agendamento />} />
-            <Route path="/sobre" element={<Sobre products={[]}/>} />
+            <Route path="/sobre" element={<Sobre/>} />
             <Route path="/loja" element={<Loja />} />
             <Route path="/login" element={<Login loginFn={login} />} />
             <Route path="/cadastro" element={<Cadastro />} />

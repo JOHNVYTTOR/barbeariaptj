@@ -15,7 +15,6 @@ import haircutImage from "@/assets/navalhinha_img.jpg";
 import completeImage from "@/assets/bigode_img.jpg";
 import mustacheImage from "@/assets/tudo_img.jpg";
 import { useState } from "react";
-import { Link } from "react-router-dom";
 
 const Home = () => {
   interface Service {
@@ -72,7 +71,6 @@ const Home = () => {
     <div>
       <Navigation />
 
-      {/* HERO */}
       <section className="relative flex items-end justify-center min-h-screen overflow-hidden">
         <div className="absolute inset-0 z-10 pointer-events-none">
           <FloatingParticles />
@@ -90,7 +88,6 @@ const Home = () => {
         />
       </section>
 
-      {/* SOBRE MIM */}
       <section className="py-20 px-2 lg:px-6 bg-[#D99D00]">
         <div className="max-w-7xl mx-auto grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
           <div className="text-left px-4">
@@ -124,7 +121,6 @@ const Home = () => {
         </div>
       </section>
 
-      {/* SERVIÇOS — TÍTULO MINIMALISTA */}
       <section className="relative py-24 px-4 bg-[#1a1a1a] overflow-hidden">
         <div className="max-w-7xl mx-auto relative z-10">
           <div className="text-center mb-20">
@@ -150,13 +146,19 @@ const Home = () => {
               <ChevronLeft className="w-8 h-8 text-yellow-400" />
             </button>
 
-            <AnimatePresence mode="wait">
+            {/*
+              *** MUDANÇA AQUI ***
+              Trocamos 'y: 50' e 'y: -50' por 'scale: 0.95'.
+              Isso cria uma transição de "fade" e "zoom" suaves,
+              que não afeta a altura do contêiner, evitando o "salto".
+            */}
+            <AnimatePresence mode="popLayout">
               <motion.div
                 key={`${current.id}-${currentService}`}
-                initial={{ opacity: 0, y: 50 }}
-                animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0, y: -50 }}
-                transition={{ duration: 0.6 }}
+                initial={{ opacity: 0, scale: 0.95 }}
+                animate={{ opacity: 1, scale: 1 }}
+                exit={{ opacity: 0, scale: 0.95 }}
+                transition={{ duration: 0.4, ease: "easeInOut" }} // Duração pode ser ajustada
                 className="max-w-6xl w-full mx-auto grid lg:grid-cols-2 gap-16 items-center bg-[#1A1A1A] p-8 rounded-2xl"
               >
                 <div className="flex justify-center">
@@ -176,14 +178,12 @@ const Home = () => {
                   </p>
 
                   <div className="pt-4">
-                    <Link to="/agendamento">
                     <Button
                       size="lg"
                       className="bg-yellow-500 text-black hover:bg-yellow-400 px-10 py-3 font-medium transition-all"
-                      >
+                    >
                       Agendar
                     </Button>
-                    </Link>
                   </div>
                 </div>
               </motion.div>
@@ -211,7 +211,6 @@ const Home = () => {
         </div>
       </section>
 
-      {/* FOOTER */}
       <footer className="bg-[#393838] text-white py-10 mt-12">
         <div className="max-w-7xl mx-auto px-4 text-center space-y-6">
           <hr className="border-gray-700" />
