@@ -19,20 +19,27 @@ public class Produto {
 	private Long idProduto;
 
 	@Column(name = "nomeProduto", nullable = false)
-	private String nome;
+	private String nomeProduto;
+	
+	@Column(name = "descricao")
+	private String descricao;
 
 	@Column(name = "preco", precision = 10, scale = 2, nullable = false)
 	private BigDecimal preco;
 
 	@Column(name = "estoque", nullable = false)
 	private Integer estoque;
+	
+	@Column(name = "fotoProduto")
+	private String imgUrl;
 
-	public Produto(Long idProduto, String nome, BigDecimal preco, Integer estoque) {
+	public Produto(Long idProduto, String nomeProduto, BigDecimal preco, Integer estoque, String imgUrl) {
 		super();
 		this.idProduto = idProduto;
-		this.nome = nome;
+		this.nomeProduto = nomeProduto;
 		this.preco = preco;
 		this.estoque = estoque;
+		this.imgUrl = imgUrl;
 	}
 	
 	public Produto() {
@@ -47,12 +54,12 @@ public class Produto {
 		this.idProduto = idProduto;
 	}
 
-	public String getNome() {
-		return nome;
+	public String getNomeProduto() {
+		return nomeProduto;
 	}
 
-	public void setNome(String nome) {
-		this.nome = nome;
+	public void setNomeProduto(String nomeProduto) {
+		this.nomeProduto = nomeProduto;
 	}
 
 	public BigDecimal getPreco() {
@@ -69,5 +76,13 @@ public class Produto {
 
 	public void setEstoque(Integer estoque) {
 		this.estoque = estoque;
+	}
+
+	public String getImgUrl() {
+		return imgUrl;
+	}
+
+	public void setImgUrl(String imgUrl) {
+		this.imgUrl = imgUrl;
 	}
 }

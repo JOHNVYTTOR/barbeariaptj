@@ -21,13 +21,17 @@ public class HorarioDisponivel {
 	@Column(name = "horarios", nullable = false, unique = true)
 	private LocalDateTime horarios;
 	
+	@Column(name= "disponivel")
 	private boolean disponivel = true;
-
-	public HorarioDisponivel(Long idHorarioDisponivel, LocalDateTime horarios, boolean disponivel) {
+	
+	private boolean isBooked;
+	
+	public HorarioDisponivel(Long idHorarioDisponivel, LocalDateTime horarios, boolean disponivel, boolean isBooked) {
 		super();
 		this.idHorarioDisponivel = idHorarioDisponivel;
 		this.horarios = horarios;
 		this.disponivel = disponivel;
+		this.isBooked = isBooked;
 	}
 
 	public HorarioDisponivel() {
@@ -56,5 +60,13 @@ public class HorarioDisponivel {
 
 	public void setDisponivel(boolean disponivel) {
 		this.disponivel = disponivel;
+	}
+
+	public boolean isBooked() {
+		return isBooked;
+	}
+
+	public void setBooked(boolean isBooked) {
+		this.isBooked = isBooked;
 	}
 }
