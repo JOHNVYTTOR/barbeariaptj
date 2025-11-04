@@ -63,12 +63,12 @@ public class Usuario {
 		this.idUsuario = idUsuario;
 	}
 
-	public String getNome() {
-		return nomeUsuario;
+	public String getNomeUsuario() {
+	    return nomeUsuario;
 	}
 
-	public void setNome(String nomeUsuario) {
-		this.nomeUsuario = nomeUsuario;
+	public void setNomeUsuario(String nomeUsuario) {
+	    this.nomeUsuario = nomeUsuario;
 	}
 
 	public String getCpf() {
