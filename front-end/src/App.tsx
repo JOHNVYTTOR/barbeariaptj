@@ -1,6 +1,5 @@
 import { Route, Routes, Navigate } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
-import { CartProvider } from "./hooks/CartContext"; // <-- 1. IMPORTADO
 
 import Index from "./pages/Index";
 import Home from "./pages/Home";
@@ -15,7 +14,6 @@ import Profile from "./pages/Profile"; // ✅ Importa a página de perfil
 import { Navigation } from "@/components/ui/navigation"; // ✅ Importa o Navigation
 import { SidebarProvider } from "@/components/ui/sidebar";
 import NotFound from "./pages/NotFound";
-import Carrinho from "./pages/Carrinho";
 
 
 const App = () => {
@@ -23,8 +21,6 @@ const App = () => {
   const isAdmin = user?.tipoUsuario?.nomeTipoUsuario === "Admin"; // Verifica se é admin
 
   return (
-    //  <-- 2. "EMBRULHE" TUDO COM O CARTPROVIDER
-    <CartProvider>
       <>
         {/* ✅ Navbar global (aparece em todas as páginas) */}
         <Navigation />
@@ -38,7 +34,6 @@ const App = () => {
             <Route path="/loja" element={<Loja />} />
             <Route path="/login" element={<Login loginFn={login} />} />
             <Route path="/cadastro" element={<Cadastro />} />
-            <Route path="/carrinho" element={<Carrinho />} />
             {/* ✅ Nova rota para o perfil do usuário */}
             <Route path="/profile" element={<Profile />} />
 
@@ -61,7 +56,6 @@ const App = () => {
           </Routes>
         </div>
       </>
-    </CartProvider> // <-- 3. FECHE O CARTPROVIDER
   );
 };
 

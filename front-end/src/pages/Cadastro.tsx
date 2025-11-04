@@ -19,9 +19,9 @@ import logoImage from "@/assets/logo.png";
 import { Home } from "lucide-react";
 
 const formSchema = z.object({
-  nome: z.string().min(3, "O nome deve ter pelo menos 3 caracteres"),
+  nomeUsuario: z.string().min(3, "O nome deve ter pelo menos 3 caracteres"),
   email: z.string().email("Email inválido"),
-  password: z.string().min(6, "A senha deve ter pelo menos 6 caracteres"),
+  senha: z.string().min(6, "A senha deve ter pelo menos 6 caracteres"),
   cpf: z.string().length(11, "O CPF deve ter 11 dígitos"),
   telefone: z.string().min(10, "O telefone deve ter pelo menos 10 dígitos"),
 });
@@ -31,9 +31,9 @@ const Cadastro = () => {
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
     defaultValues: {
-      nome: "",
+      nomeUsuario: "",
       email: "",
-      password: "",
+      senha: "",
       cpf: "",
       telefone: "",
     },
@@ -42,9 +42,9 @@ const Cadastro = () => {
   async function handleCadastro(data: z.infer<typeof formSchema>) {
     try {
       await api.post('/usuarios/register', {
-        nome: data.nome,
+        nomeUsuario: data.nomeUsuario,
         email: data.email,
-        senha: data.password,
+        senha: data.senha,
         cpf: data.cpf,
         telefone: data.telefone
       });
@@ -103,7 +103,7 @@ const Cadastro = () => {
           <form onSubmit={form.handleSubmit(handleCadastro)} className="space-y-4">
             <FormField
               control={form.control}
-              name="nome"
+              name="nomeUsuario"
               render={({ field }) => (
                 <FormItem>
                   <FormLabel>Nome</FormLabel>
@@ -138,7 +138,7 @@ const Cadastro = () => {
             />
             <FormField
               control={form.control}
-              name="password"
+              name="senha"
               render={({ field }) => (
                 <FormItem>
                   <FormLabel>Senha</FormLabel>

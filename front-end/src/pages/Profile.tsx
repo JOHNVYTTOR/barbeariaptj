@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom"; // 👈 Import do hook
 import { Card, CardHeader, CardTitle, CardContent, CardFooter } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
@@ -7,7 +8,8 @@ import { toast } from "@/components/ui/use-toast";
 import { useAuth } from "@/hooks/useAuth";
 
 export default function Profile() {
-  const { user, logout } = useAuth(); // Pega usuário e função de logout
+  const { user, logout } = useAuth();
+  const navigate = useNavigate(); // 👈 Inicializa o hook de navegação
 
   const [formData, setFormData] = useState({
     nomeUsuario: user?.nomeUsuario || "",
@@ -32,23 +34,18 @@ export default function Profile() {
     setFormData((prev) => ({ ...prev, [name]: value }));
   };
 
-  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    if (e.target.files && e.target.files[0]) {
-      const file = e.target.files[0];
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        setFormData((prev) => ({ ...prev, fotoPerfil: reader.result as string }));
-      };
-      reader.readAsDataURL(file);
-    }
-  };
-
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     toast({
       title: "Perfil atualizado com sucesso!",
       description: "As alterações foram salvas no seu perfil.",
     });
+  };
+
+  // 👇 Função de logout com redirecionamento
+  const handleLogout = () => {
+    logout();
+    navigate("/"); // Redireciona para a página inicial
   };
 
   return (
@@ -61,7 +58,7 @@ export default function Profile() {
         <form onSubmit={handleSubmit}>
           <CardContent className="space-y-4">
             <div>
-              <Label htmlFor="nomeUsuario">Nome</Label>
+              <Label htmlFor="nome">Nome</Label>
               <Input
                 id="nomeUsuario"
                 name="nomeUsuario"
@@ -119,7 +116,7 @@ export default function Profile() {
                 type="button"
                 variant="destructive"
                 className="w-full"
-                onClick={logout} // Botão de logout
+                onClick={handleLogout} // 👈 Agora chama a função que redireciona
               >
                 Sair da Conta
               </Button>
@@ -130,4 +127,3 @@ export default function Profile() {
     </div>
   );
 }
-

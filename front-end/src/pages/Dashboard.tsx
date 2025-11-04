@@ -20,21 +20,22 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Calendar } from '@/components/ui/calendar';
 import { Switch } from '@/components/ui/switch';
-// import { Sidebar } from '@/components/ui/sidebar'; // Removido (correto)
+// import { Sidebar } from '@/components/ui/sidebar'; // Removido (Layout Limpo)
 import { toast } from "sonner";
-import { api } from '@/api'; // Importa a instância configurada do Axios
+import { api } from '../api.ts'; // Importa a instância configurada do Axios
 import { format } from 'date-fns'; // Para formatar a data para a API
 import { ptBR } from 'date-fns/locale'; // Para localização do calendário
 
 // --- Tipos de Dados (Interfaces baseadas no seu Backend) ---
+// (Estas são as interfaces do CÓDIGO 1 - Lógica Avançada)
 interface TipoUsuario {
   id: number;
   nomeTipoUsuario: string;
 }
 
 interface Usuario {
-  id: number;
-  nome: string;
+  idUsuario: number;
+  nomeUsuario: string;
   email: string;
   cpf: string;
   telefone: string;
@@ -49,10 +50,12 @@ interface Servico {
 }
 
 interface Produto {
-  id: number;
-  nome: string;
+  idProduto: number;
+  nomeProduto: string; 
+  descricao: string;   
   preco: number;
-  estoque: number;
+  estoque: number;     
+  imgUrl: string;   
 }
 
 interface Agendamento {
@@ -64,15 +67,85 @@ interface Agendamento {
 }
 
 interface HorarioDisponivel {
-  idHorarioDisponivel: number | null; // ID pode ser nulo se for um novo horário não salvo ainda
+  idHorarioDisponivel: number | null; 
   horarios: string; // Formato HH:MM
   disponivel: boolean;
   data: Date;
+  isBooked?: boolean; // Flag temporária da UI
 }
+
+// --- FUNÇÃO GERADORA DE TEMPLATE ---
+// (Esta é a função do CÓDIGO 1 - Lógica Avançada)
+const generateDailyTemplate = (selectedDate: Date): HorarioDisponivel[] => {
+  const template: HorarioDisponivel[] = [];
+  const date = new Date(selectedDate); 
+
+  const createEntry = (h: number, m: number): HorarioDisponivel => {
+    const d = new Date(date);
+    d.setHours(h, m, 0, 0); 
+
+    const yyyy = d.getFullYear();
+    const mm = String(d.getMonth() + 1).padStart(2, '0'); 
+    const dd = String(d.getDate()).padStart(2, '0');
+    
+    const hh = String(d.getHours()).padStart(2, '0');
+    const min = String(d.getMinutes()).padStart(2, '0');
+    const ss = String(d.getSeconds()).padStart(2, '0');
+
+    const isoLocalString = `${yyyy}-${mm}-${dd}T${hh}:${min}:${ss}`;
+
+    return {
+      idHorarioDisponivel: null, 
+      horarios: isoLocalString,   
+      disponivel: true,           
+      data: date,                 
+      isBooked: false             
+    };
+  };
+
+  const incrementTime = (h: number, m: number): {h: number, m: number} => {
+      m += 45;
+      if (m >= 60) {
+        h += 1;
+        m -= 60;
+      }
+      return {h, m};
+  };
+
+  // --- Sessão da Manhã ---
+  let h = 7;
+  let m = 30;
+  const breakStartH = 12;
+  const breakStartM = 40;
+  
+  while (h < breakStartH || (h === breakStartH && m < breakStartM)) {
+    template.push(createEntry(h, m));
+    const next = incrementTime(h, m);
+    h = next.h;
+    m = next.m;
+  }
+  
+  // --- Sessão da Tarde ---
+  h = 13;
+  m = 40;
+  const endTimeH = 20; 
+  const endTimeM = 0;
+  
+  while (h < endTimeH || (h === endTimeH && m <= endTimeM)) {
+    template.push(createEntry(h, m));
+    const next = incrementTime(h, m);
+    h = next.h;
+    m = next.m;
+  }
+  
+  return template;
+};
+
 
 // --- Componente Principal do Dashboard ---
 const Dashboard = () => {
   // --- Estados de Dados ---
+  // (Estes são os estados do CÓDIGO 1 - Lógica Avançada)
   const [agendamentos, setAgendamentos] = useState<Agendamento[]>([]);
   const [servicos, setServicos] = useState<Servico[]>([]);
   const [produtos, setProdutos] = useState<Produto[]>([]);
@@ -83,25 +156,28 @@ const Dashboard = () => {
   const [loading, setLoading] = useState(true);
   const [servicoDialogAberto, setServicoDialogAberto] = useState(false);
   const [produtoDialogAberto, setProdutoDialogAberto] = useState(false);
-  const [servicoEditando, setServicoEditando] = useState<Partial<Servico> | null>(null); // Usar Partial para formulário
+  const [servicoEditando, setServicoEditando] = useState<Partial<Servico> | null>(null); 
   const [produtoEditando, setProdutoEditando] = useState<Partial<Produto> | null>(null);
   const [dataSelecionada, setDataSelecionada] = useState<Date | undefined>(new Date());
-  const [novoHorario, setNovoHorario] = useState("");
+  // novoHorario removido
 
   // --- Funções de Busca (Fetch) ---
+  // (Estas são as funções do CÓDIGO 1 - Lógica Avançada)
   const fetchAgendamentos = useCallback(async () => {
     try {
-      const response = await api.get('/agendamentos'); // Endpoint do backend
+      const response = await api.get('/agendamentos'); 
       setAgendamentos(response.data);
+      return response.data; // <-- Retorna os dados
     } catch (error) {
       console.error("Erro fetchAgendamentos:", error);
       toast.error('Erro ao buscar agendamentos.');
+      return []; // <-- Retorna vazio
     }
   }, []);
 
   const fetchServicos = useCallback(async () => {
     try {
-      const response = await api.get('/servicos'); // Endpoint do backend
+      const response = await api.get('/servicos'); 
       setServicos(response.data);
     } catch (error) {
       console.error("Erro fetchServicos:", error);
@@ -111,7 +187,7 @@ const Dashboard = () => {
 
   const fetchProdutos = useCallback(async () => {
     try {
-      const response = await api.get('/produtos'); // Endpoint do backend
+      const response = await api.get('/produtos'); 
       setProdutos(response.data);
     } catch (error) {
       console.error("Erro fetchProdutos:", error);
@@ -121,8 +197,7 @@ const Dashboard = () => {
 
   const fetchClientes = useCallback(async () => {
     try {
-      const response = await api.get('/usuarios'); // Endpoint do backend
-      // Filtra no frontend para mostrar apenas usuários com tipo 'Cliente'
+      const response = await api.get('/usuarios'); 
       setClientes(response.data.filter((u: Usuario) => u.tipoUsuario?.nomeTipoUsuario === 'Cliente'));
     } catch (error) {
       console.error("Erro fetchClientes:", error);
@@ -130,45 +205,99 @@ const Dashboard = () => {
     }
   }, []);
 
-  const fetchHorarios = useCallback(async (data: Date) => { try { const dataFormatada = format(data,
-'yyyy-MM-dd'); const response = await api.get(`/horarios/disponiveis/${dataFormatada}`);
-setHorarios(response.data); } catch (error: any) { setHorarios([]); if (error.response?.status !== 404)
-{ console.error("Erro fetchHorarios:", error); toast.error('Erro ao buscar horários.'); } } }, []);
+  // (Função fetchHorarios do CÓDIGO 1 - Lógica Avançada)
+  const fetchHorarios = useCallback(async (data: Date, currentAgendamentos: Agendamento[]) => {
+    let horariosDoDia: HorarioDisponivel[] = [];
+    let errorOccurred = false;
+
+    try {
+      const dataFormatada = format(data, 'yyyy-MM-dd');
+      const response = await api.get(`/horarios/disponiveis/${dataFormatada}`);
+      
+      if (response.data && response.data.length > 0) {
+        horariosDoDia = response.data;
+      } else {
+        horariosDoDia = generateDailyTemplate(data);
+      }
+    } catch (error: any) {
+      if (error.response?.status === 404) {
+        horariosDoDia = generateDailyTemplate(data);
+      } else {
+        errorOccurred = true;
+        setHorarios([]);
+        console.error("Erro fetchHorarios:", error);
+        toast.error('Erro ao buscar horários.');
+      }
+    }
+    
+    if (!errorOccurred) {
+      const horariosAgendados = new Set(
+        currentAgendamentos
+          .filter(ag => ag.status !== 'Cancelado')
+          .map(ag => new Date(ag.dataHora).toISOString()) 
+      );
+
+      const horariosAtualizados = horariosDoDia.map(h => {
+        const horarioIso = new Date(h.horarios).toISOString();
+        const estaAgendado = horariosAgendados.has(horarioIso);
+
+        return {
+          ...h,
+          disponivel: estaAgendado ? false : h.disponivel, 
+          isBooked: estaAgendado 
+        };
+      })
+      .sort((a, b) => new Date(a.horarios).getTime() - new Date(b.horarios).getTime());
+
+      setHorarios(horariosAtualizados);
+    }
+  }, []); 
 
 
   // --- Efeito de Carregamento Inicial ---
+  // (Lógica do CÓDIGO 1 - Lógica Avançada)
   useEffect(() => {
     const loadDashboardData = async () => {
       setLoading(true);
-      await Promise.all([
+      const [agendamentosData] = await Promise.all([
         fetchAgendamentos(),
         fetchServicos(),
         fetchProdutos(),
         fetchClientes(),
-        // Carrega horários da data atual no início
-        dataSelecionada ? fetchHorarios(dataSelecionada) : Promise.resolve()
       ]);
+      
+      if (dataSelecionada) {
+          await fetchHorarios(dataSelecionada, agendamentosData);
+      }
       setLoading(false);
     };
     loadDashboardData();
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []); // Dependências removidas para rodar só uma vez no mount
+  }, []); // Dependências vazias (só roda 1 vez)
 
   // Efeito para recarregar horários quando a data selecionada muda
+  // (Lógica do CÓDIGO 1 - Lógica Avançada)
   useEffect(() => {
     if (dataSelecionada) {
-      fetchHorarios(dataSelecionada);
+      fetchHorarios(dataSelecionada, agendamentos);
     }
-  }, [dataSelecionada, fetchHorarios]);
+  }, [dataSelecionada, fetchHorarios, agendamentos]);
 
   // --- Handlers de Ações (CRUD) ---
+  // (Todos os Handlers do CÓDIGO 1 - Lógica Avançada)
 
-  // Agendamentos
+  // Agendamentos (com re-fetch de horários)
   const handleUpdateAgendamentoStatus = async (agendamento: Agendamento, status: 'Concluído' | 'Cancelado') => {
     try {
       await api.put(`/agendamentos/${agendamento.idAgendamento}`, { ...agendamento, status: status });
       toast.success(`Agendamento ${status === 'Concluído' ? 'concluído' : 'cancelado'}!`);
-      fetchAgendamentos(); // Rebusca a lista
+
+      const novosAgendamentos = await fetchAgendamentos(); 
+      
+      if (dataSelecionada && format(new Date(agendamento.dataHora), 'yyyy-MM-dd') === format(dataSelecionada, 'yyyy-MM-dd')) {
+        fetchHorarios(dataSelecionada, novosAgendamentos);
+      }
+
     } catch (error) {
       console.error("Erro handleUpdateAgendamentoStatus:", error);
       toast.error('Erro ao atualizar status do agendamento.');
@@ -190,51 +319,51 @@ setHorarios(response.data); } catch (error: any) { setHorarios([]); if (error.re
         toast.success('Serviço criado com sucesso!');
       }
       setServicoDialogAberto(false);
-      fetchServicos(); // Rebusca a lista
+      fetchServicos(); 
     } catch (error) {
       console.error("Erro handleSaveServico:", error);
       toast.error('Erro ao salvar serviço.');
     }
   };
 
-  const handleDeleteServico = async (id: number) => {
+  const handleDeleteServico = async (idServico:number) => {
     try {
-      await api.delete(`/servicos/${id}`);
+      await api.delete(`/servicos/${idServico}`);
       toast.success('Serviço excluído com sucesso!');
-      fetchServicos(); // Rebusca a lista
+      fetchServicos(); 
     } catch (error) {
       console.error("Erro handleDeleteServico:", error);
       toast.error('Erro ao excluir serviço. Verifique se ele não está sendo usado em agendamentos.');
     }
   };
 
-  // Produtos
+  // Produtos (com validação para os campos novos)
   const handleSaveProduto = async (formData: Partial<Produto>) => {
-    if (!formData.nome || formData.preco === undefined || formData.estoque === undefined) {
+    if (!formData.nomeProduto || !formData.descricao || formData.preco === undefined || formData.estoque === undefined || !formData.imgUrl) {
         toast.error("Preencha todos os campos do produto.");
         return;
     }
     try {
-      if (formData.id) {
-        await api.put(`/produtos/${formData.id}`, formData);
+      if (formData.idProduto) {
+        await api.put(`/produtos/${formData.idProduto}`, formData);
         toast.success('Produto atualizado com sucesso!');
       } else {
         await api.post('/produtos', formData);
         toast.success('Produto criado com sucesso!');
       }
       setProdutoDialogAberto(false);
-      fetchProdutos(); // Rebusca a lista
+      fetchProdutos(); 
     } catch (error) {
       console.error("Erro handleSaveProduto:", error);
       toast.error('Erro ao salvar produto.');
     }
   };
 
-  const handleDeleteProduto = async (id: number) => {
+  const handleDeleteProduto = async (idProduto: number) => {
     try {
-      await api.delete(`/produtos/${id}`);
+      await api.delete(`/produtos/${idProduto}`);
       toast.success('Produto excluído com sucesso!');
-      fetchProdutos(); // Rebusca a lista
+      fetchProdutos(); 
     } catch (error) {
       console.error("Erro handleDeleteProduto:", error);
       toast.error('Erro ao excluir produto.');
@@ -242,36 +371,50 @@ setHorarios(response.data); } catch (error: any) { setHorarios([]); if (error.re
   };
 
   // Clientes
-  const handleDeleteCliente = async (id: number) => {
+  const handleDeleteCliente = async (idUsuario: number) => {
     try {
-      await api.delete(`/usuarios/${id}`);
+      await api.delete(`/usuarios/${idUsuario}`);
       toast.success('Cliente excluído com sucesso!');
-      fetchClientes(); // Rebusca a lista
+      fetchClientes(); 
     } catch (error) {
       console.error("Erro handleDeleteCliente:", error);
       toast.error('Erro ao excluir cliente. Verifique se ele não possui agendamentos.');
     }
   };
 
-  // Horários
+  // Horários (sem 'handleAdicionarHorario')
   const handleToggleHorario = (index: number) => {
     const novosHorarios = [...horarios];
     novosHorarios[index].disponivel = !novosHorarios[index].disponivel;
     setHorarios(novosHorarios);
   };
 
-  const handleAdicionarHorario = async () => { if (!dataSelecionada) { toast.error("Selecione uma data primeiro.");
-    return; } if (!novoHorario || !/^(?:[01]\d|2[0-3]):[0-5]\d$/.test(novoHorario)) {
-toast.error("Formato inválido. Use HH:MM."); return; } const dataIso = `${format(dataSelecionada,
-'yyyy-MM-dd')}T${novoHorario}:00`; try { await api.post('/horarios', { horarios: dataIso, disponivel:
-true }); toast.success("Horário criado!"); setNovoHorario(""); fetchHorarios(dataSelecionada); }
-catch (error) { console.error("Erro handleAdicionarHorario:", error); toast.error("Erro ao adicionar horário."); } }
+  // handleSalvarHorarios (com lógica POST/PUT)
+  const handleSalvarHorarios = async () => {
+    if (!dataSelecionada) return;
 
-  const handleSalvarHorarios = async () => { if (!dataSelecionada) return; try { await Promise.all(
-horarios.map(h => api.put(`/horarios/${h.idHorarioDisponivel}/disponibilidade`, null, { params: { disponivel:
-h.disponivel } }) ) ); toast.success("Horários atualizados!"); fetchHorarios(dataSelecionada); } catch
-(error) { console.error("Erro handleSalvarHorarios:", error); toast.error("Erro ao salvar horários."); }
-};
+    const promises = horarios.map(h => {
+      if (h.idHorarioDisponivel) {
+        return api.put(`/horarios/${h.idHorarioDisponivel}/disponibilidade`, null, { 
+          params: { disponivel: h.disponivel } 
+        });
+      } else {
+        return api.post('/horarios', { 
+          horarios: h.horarios, 
+          disponivel: h.disponivel 
+        });
+      }
+    });
+
+    try {
+      await Promise.all(promises);
+      toast.success("Horários atualizados!");
+      fetchHorarios(dataSelecionada, agendamentos); 
+    } catch (error) {
+      console.error("Erro handleSalvarHorarios:", error);
+      toast.error("Erro ao salvar horários.");
+    }
+  };
 
   // --- Handlers de UI (Abrir/Fechar Dialogs) ---
   const handleEditarServicoClick = (servico: Servico) => {
@@ -280,7 +423,7 @@ h.disponivel } }) ) ); toast.success("Horários atualizados!"); fetchHorarios(da
   };
 
   const handleNovoServicoClick = () => {
-    setServicoEditando(null);
+    setServicoEditando(null); 
     setServicoDialogAberto(true);
   };
 
@@ -290,11 +433,13 @@ h.disponivel } }) ) ); toast.success("Horários atualizados!"); fetchHorarios(da
   };
 
   const handleNovoProdutoClick = () => {
-    setProdutoEditando(null);
+    setProdutoEditando(null); 
     setProdutoDialogAberto(true);
   };
 
   // ----- JSX DO DASHBOARD -----
+  // (Este é o JSX do CÓDIGO 2 - Layout Limpo)
+
   if (loading && !servicoDialogAberto && !produtoDialogAberto) {
     return (
       <main className="flex-1 p-4 md:p-6 text-center text-white">Carregando Dashboard...</main>
@@ -302,10 +447,7 @@ h.disponivel } }) ) ); toast.success("Horários atualizados!"); fetchHorarios(da
   }
 
   return (
-    // *** MUDANÇA AQUI ***
-    // Padding principal reduzido de 'p-6 md:p-10' para 'p-4 md:p-6'
     <main className="flex-1 p-4 md:p-6 overflow-x-hidden">
-      {/* Alterado para Grid de 3 colunas para forçar a centralização */}
       <header className="grid grid-cols-3 items-center mb-4">
         
         {/* Coluna 1: Vazia (para balancear) */}
@@ -324,10 +466,8 @@ h.disponivel } }) ) ); toast.success("Horários atualizados!"); fetchHorarios(da
         </div>
       </header>
 
-     <Tabs defaultValue="overview" className="w-full">
-        {/* Adicionado 'flex-wrap' para lidar com a quebra de linha em telas menores */}
+      <Tabs defaultValue="overview" className="w-full">
         <div className="flex justify-center flex-wrap">
-          {/* Classes 'overflow-x-auto' e 'whitespace-nowrap' REMOVIDAS para tirar a barra de rolagem */}
           <TabsList className="bg-gray-800 border-gray-700 border mb-4">
             <TabsTrigger value="overview">Visão Geral</TabsTrigger>
             <TabsTrigger value="agendamentos">Agendamentos</TabsTrigger>
@@ -339,11 +479,9 @@ h.disponivel } }) ) ); toast.success("Horários atualizados!"); fetchHorarios(da
         </div>
 
         {/* === Aba: Visão Geral === */}
-        {/* *** MUDANÇA AQUI *** (Margem superior reduzida de 'mt-6' para 'mt-4') */}
         <TabsContent value="overview" className="mt-4">
-          {/* *** MUDANÇA AQUI *** (Margem inferior reduzida de 'mb-6' para 'mb-4') */}
           <div className="mb-4">
-            <Card className="bg-gray-800 border-gray-700 text-white">
+            <Card className="bg-gray-800 border-gray-700 text-white max-w-sm mx-auto"> {/* Max-w e mx-auto adicionado */}
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                 <CardTitle className="text-sm font-medium">Agendamentos Pendentes (Hoje)</CardTitle>
                 <Check className="h-4 w-4 text-green-500" />
@@ -359,7 +497,6 @@ h.disponivel } }) ) ); toast.success("Horários atualizados!"); fetchHorarios(da
             </Card>
           </div>
 
-          {/* *** MUDANÇA AQUI *** (Margem superior reduzida de 'mt-8' para 'mt-6') */}
           <div className="mt-6">
             <Card className="bg-gray-800 border-gray-700 text-white">
               <CardHeader>
@@ -415,6 +552,7 @@ h.disponivel } }) ) ); toast.success("Horários atualizados!"); fetchHorarios(da
               </Button>
             </CardHeader>
             <CardContent className="overflow-x-auto">
+              {/* Esta TabelaProdutos agora é a do CÓDIGO 1 */}
               <TabelaProdutos data={produtos} onEdit={handleEditarProdutoClick} onDelete={handleDeleteProduto} />
             </CardContent>
           </Card>
@@ -426,7 +564,6 @@ h.disponivel } }) ) ); toast.success("Horários atualizados!"); fetchHorarios(da
             <CardHeader>
               <CardTitle className="text-yellow-400">Gerenciar Horários Disponíveis</CardTitle>
             </CardHeader>
-            {/* *** MUDANÇA AQUI *** (Gap reduzido de 'gap-8' para 'gap-6') */}
             <CardContent className="grid md:grid-cols-2 gap-6">
               <div>
                 <h3 className="text-lg font-semibold mb-2">Selecione o dia</h3>
@@ -445,14 +582,20 @@ h.disponivel } }) ) ); toast.success("Horários atualizados!"); fetchHorarios(da
                 <div className="space-y-3 max-h-64 overflow-y-auto pr-2 mb-4">
                   {horarios.length > 0 ? horarios.map((h, index) => (
                     <div key={h.idHorarioDisponivel || `${h.data}-${h.horarios}`} className="flex items-center p-3 bg-gray-700 rounded-md">
-_                      <Label htmlFor={`horario-${h.horarios}`} className="text-base flex-grow">
+                      {/* Lógica de 'isBooked' (do CÓDIGO 1) aplicada ao Label */}
+                      <Label 
+                        htmlFor={`horario-${h.horarios}`} 
+                        className={`text-base flex-grow ${h.isBooked ? 'text-gray-400 line-through' : ''}`}
+                      >
                         {new Date(h.horarios).toLocaleString('pt-BR', { dateStyle: 'short', timeStyle: 'short' })}
+                        {h.isBooked && <span className="text-xs ml-2 font-normal">(Agendado)</span>}
                       </Label>
                       <Switch
                         id={`horario-${h.horarios}`}
                         checked={h.disponivel}
                         onCheckedChange={() => handleToggleHorario(index)}
                         className="data-[state=checked]:bg-yellow-400"
+                        disabled={h.isBooked} // Lógica 'disabled' (do CÓDIGO 1)
                       />
                     </div>
                   )) : (
@@ -460,18 +603,7 @@ _                      <Label htmlFor={`horario-${h.horarios}`} className="text-
                   )}
                 </div>
 
-                <div className="flex gap-2 mt-4 pt-4 border-t border-gray-700">
-                  <Input
-                    type="text"
-                    placeholder="Novo horário (ex: 19:30)"
-                    value={novoHorario}
-                    onChange={(e) => setNovoHorario(e.target.value)}
-                    className="bg-gray-700 border-gray-600"
-                  />
-                  <Button onClick={handleAdicionarHorario} className="bg-yellow-400 text-black hover:bg-yellow-300" title="Adicionar novo horário para este dia">
-                    <Plus className="h-4 w-4" />
-                  </Button>
-                </div>
+                {/* Bloco de "Adicionar Horário Manual" (do CÓDIGO 2) REMOVIDO */}
 
                 <Button onClick={handleSalvarHorarios} className="w-full mt-4 bg-green-500 text-white hover:bg-green-600">
                   Salvar Alterações nos Horários
@@ -495,6 +627,7 @@ _                      <Label htmlFor={`horario-${h.horarios}`} className="text-
       </Tabs>
 
       {/* --- Dialogs (Pop-ups) --- */}
+      {/* (Estes são os Dialogs do CÓDIGO 1 - Lógica Avançada) */}
       <ServicoDialog
         key={servicoEditando?.idServico || 'new-servico'}
         open={servicoDialogAberto}
@@ -502,8 +635,9 @@ _                      <Label htmlFor={`horario-${h.horarios}`} className="text-
         onSave={handleSaveServico}
         servico={servicoEditando}
       />
+      {/* CORREÇÃO: A 'key' deve usar 'idProduto' (da Lógica 1) */}
       <ProdutoDialog
-        key={produtoEditando?.id || 'new-produto'}
+        key={produtoEditando?.idProduto || 'new-produto'} 
         open={produtoDialogAberto}
         onOpenChange={setProdutoDialogAberto}
         onSave={handleSaveProduto}
@@ -514,6 +648,7 @@ _                      <Label htmlFor={`horario-${h.horarios}`} className="text-
 };
 
 // --- Componentes de Tabela ---
+// (Estas são as Tabelas do CÓDIGO 1 - Lógica Avançada)
 
 interface TabelaAgendamentosProps {
   data: Agendamento[];
@@ -533,7 +668,8 @@ const TabelaAgendamentos: React.FC<TabelaAgendamentosProps> = ({ data, onUpdateS
     <TableBody>
       {data.length > 0 ? data.map((ag) => (
         <TableRow key={ag.idAgendamento} className="hover:bg-gray-700 border-gray-700">
-          <TableCell>{ag.usuario?.nome || 'Cliente não encontrado'}</TableCell>
+          {/* Usa idUsuario (Lógica 1) */}
+          <TableCell>{ag.usuario?.nomeUsuario || 'Cliente não encontrado'}</TableCell> 
           <TableCell>{new Date(ag.dataHora).toLocaleString('pt-BR', { dateStyle: 'short', timeStyle: 'short' })}</TableCell>
           <TableCell>{ag.servico?.nomeServico || 'Serviço não encontrado'}</TableCell>
           <TableCell>
@@ -609,11 +745,12 @@ interface TabelaProdutosProps {
   onEdit: (p: Produto) => void;
   onDelete: (id: number) => void;
 }
+// (Tabela de Produtos do CÓDIGO 1 - Lógica Avançada)
 const TabelaProdutos: React.FC<TabelaProdutosProps> = ({ data, onEdit, onDelete }) => (
   <Table>
     <TableHeader>
       <TableRow className="hover:bg-gray-700 border-gray-700">
-        <TableHead className="text-white">Nome</TableHead>
+        <TableHead className="text-white">Nome do Produto</TableHead>
         <TableHead className="text-white">Preço</TableHead>
         <TableHead className="text-white">Estoque</TableHead>
         <TableHead className="text-right text-white">Ações</TableHead>
@@ -621,15 +758,15 @@ const TabelaProdutos: React.FC<TabelaProdutosProps> = ({ data, onEdit, onDelete 
     </TableHeader>
     <TableBody>
       {data.length > 0 ? data.map((p) => (
-        <TableRow key={p.id} className="hover:bg-gray-700 border-gray-700">
-          <TableCell>{p.nome}</TableCell>
+        <TableRow key={p.idProduto} className="hover:bg-gray-700 border-gray-700">
+          <TableCell>{p.nomeProduto}</TableCell>
           <TableCell>R$ {p.preco.toFixed(2)}</TableCell>
           <TableCell>{p.estoque}</TableCell>
           <TableCell className="text-right space-x-2">
             <Button variant="outline" size="icon" onClick={() => onEdit(p)} className="text-yellow-400 border-yellow-400 hover:bg-yellow-400 hover:text-black" title="Editar Produto">
               <Edit className="h-4 w-4" />
             </Button>
-            <BotaoExcluir onConfirm={() => onDelete(p.id)} />
+            <BotaoExcluir onConfirm={() => onDelete(p.idProduto)} />
           </TableCell>
         </TableRow>
       )) : (
@@ -657,12 +794,13 @@ const TabelaClientes: React.FC<TabelaClientesProps> = ({ data, onDelete }) => (
     </TableHeader>
     <TableBody>
       {data.length > 0 ? data.map((c) => (
-        <TableRow key={c.id} className="hover:bg-gray-700 border-gray-700">
-          <TableCell>{c.nome}</TableCell>
+        // Usa idUsuario (Lógica 1)
+        <TableRow key={c.idUsuario} className="hover:bg-gray-700 border-gray-700"> 
+          <TableCell>{c.nomeUsuario}</TableCell>
           <TableCell>{c.email}</TableCell>
           <TableCell>{c.telefone}</TableCell>
           <TableCell className="text-right">
-            <BotaoExcluir onConfirm={() => onDelete(c.id)} />
+            <BotaoExcluir onConfirm={() => onDelete(c.idUsuario)} /> 
           </TableCell>
         </TableRow>
       )) : (
@@ -675,6 +813,7 @@ const TabelaClientes: React.FC<TabelaClientesProps> = ({ data, onDelete }) => (
 );
 
 // --- Componentes de Dialog ---
+// (Estes são os Dialogs do CÓDIGO 1 - Lógica Avançada)
 
 // Botão Excluir com confirmação
 const BotaoExcluir: React.FC<{ onConfirm: () => void }> = ({ onConfirm }) => (
@@ -705,19 +844,16 @@ interface ServicoDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   onSave: (data: Partial<Servico>) => void;
-  servico: Partial<Servico> | null; // Recebe o serviço a editar ou null para criar
+  servico: Partial<Servico> | null; 
 }
 const ServicoDialog: React.FC<ServicoDialogProps> = ({ open, onOpenChange, onSave, servico }) => {
-  // Estado local para o formulário
   const [formData, setFormData] = useState<Partial<Servico>>({ idServico: undefined, nomeServico: '', preco: 0, duracao: 30 });
 
-  // Popula o formulário quando o dialog abre ou o serviço muda
   useEffect(() => {
     if (open) {
       if (servico) {
         setFormData(servico);
       } else {
-        // Reset para novo serviço
         setFormData({ idServico: undefined, nomeServico: '', preco: 0, duracao: 30 });
       }
     }
@@ -727,13 +863,13 @@ const ServicoDialog: React.FC<ServicoDialogProps> = ({ open, onOpenChange, onSav
     const { name, value, type } = e.target;
     setFormData(prev => ({
       ...prev,
-      [name]: type === 'number' ? parseFloat(value) || 0 : value // Converte para número se for o caso
+      [name]: type === 'number' ? parseFloat(value) || 0 : value
     }));
   };
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    onSave(formData); // Chama a função onSave passada por props com os dados do form
+    onSave(formData); 
   };
 
   return (
@@ -775,24 +911,41 @@ interface ProdutoDialogProps {
   onSave: (data: Partial<Produto>) => void;
   produto: Partial<Produto> | null;
 }
+// (Formulário de Produto do CÓDIGO 1 - Lógica Avançada)
 const ProdutoDialog: React.FC<ProdutoDialogProps> = ({ open, onOpenChange, onSave, produto }) => {
-  const [formData, setFormData] = useState<Partial<Produto>>({ id: undefined, nome: '', preco: 0, estoque: 0 });
+  const [formData, setFormData] = useState<Partial<Produto>>({ 
+    idProduto: undefined, 
+    nomeProduto: '', 
+    descricao: '', 
+    preco: 0, 
+    estoque: 0, 
+    imgUrl: '' 
+  });
 
   useEffect(() => {
     if (open) {
       if (produto) {
         setFormData(produto);
       } else {
-        setFormData({ id: undefined, nome: '', preco: 0, estoque: 0 });
+        setFormData({ 
+          idProduto: undefined, 
+          nomeProduto: '', 
+          descricao: '', 
+          preco: 0, 
+          estoque: 0, 
+          imgUrl: '' 
+        });
       }
     }
   }, [produto, open]);
 
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     const { name, value, type } = e.target;
     setFormData(prev => ({
       ...prev,
-      [name]: type === 'number' ? parseInt(value, 10) || 0 : value // Use parseInt para estoque
+      [name]: type === 'number' ? 
+        (name === 'preco' ? parseFloat(value) || 0 : parseInt(value, 10) || 0) 
+        : value
     }));
   };
 
@@ -806,20 +959,38 @@ const ProdutoDialog: React.FC<ProdutoDialogProps> = ({ open, onOpenChange, onSav
       <DialogContent className="bg-gray-800 border-gray-700 text-white">
         <form onSubmit={handleSubmit}>
           <DialogHeader>
-            <DialogTitle className="text-yellow-400">{produto?.id ? 'Editar Produto' : 'Adicionar Novo Produto'}</DialogTitle>
+            <DialogTitle className="text-yellow-400">{produto?.idProduto ? 'Editar Produto' : 'Adicionar Novo Produto'}</DialogTitle>
           </DialogHeader>
           <div className="grid gap-4 py-4">
             <div className="grid grid-cols-4 items-center gap-4">
               <Label htmlFor="nome-produto" className="text-right">Nome</Label>
-              <Input id="nome-produto" name="nome" value={formData.nome} onChange={handleChange} className="col-span-3 bg-gray-700 border-gray-600" required />
+              <Input id="nome-produto" name="nomeProduto" value={formData.nomeProduto} onChange={handleChange} className="col-span-3 bg-gray-700 border-gray-600" required />
             </div>
+            
+            <div className="grid grid-cols-4 items-center gap-4">
+              <Label htmlFor="descricao-produto" className="text-right">Descrição</Label>
+              <textarea 
+                id="descricao-produto" 
+                name="descricao" 
+                value={formData.descricao} 
+                onChange={handleChange} 
+                className="col-span-3 bg-gray-700 border-gray-600 rounded-md p-2 h-24" 
+                required 
+              />
+            </div>
+            
             <div className="grid grid-cols-4 items-center gap-4">
               <Label htmlFor="preco-produto" className="text-right">Preço (R$)</Label>
               <Input id="preco-produto" name="preco" type="number" step="0.01" value={formData.preco} onChange={handleChange} className="col-span-3 bg-gray-700 border-gray-600" required min="0"/>
             </div>
             <div className="grid grid-cols-4 items-center gap-4">
-              <Label htmlFor="estoque-produto" className="text-right">Estoque</Label>
-              <Input id="estoque-produto" name="estoque" type="number" value={formData.estoque} onChange={handleChange} className="col-span-3 bg-gray-700 border-gray-600" required min="0"/>
+              <Label htmlFor="stock-produto" className="text-right">Estoque</Label>
+              <Input id="stock-produto" name="estoque" type="number" value={formData.estoque} onChange={handleChange} className="col-span-3 bg-gray-700 border-gray-600" required min="0"/>
+            </div>
+            
+            <div className="grid grid-cols-4 items-center gap-4">
+              <Label htmlFor="imagem-produto" className="text-right">URL da Imagem</Label>
+              <Input id="imagem-produto" name="imgUrl" value={formData.imgUrl} onChange={handleChange} className="col-span-3 bg-gray-700 border-gray-600" required placeholder="https://..."/>
             </div>
           </div>
           <DialogFooter>
@@ -835,3 +1006,4 @@ const ProdutoDialog: React.FC<ProdutoDialogProps> = ({ open, onOpenChange, onSav
 };
 
 export default Dashboard;
+

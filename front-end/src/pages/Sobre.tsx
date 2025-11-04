@@ -13,20 +13,20 @@ export default function Sobre() {
   const galleryImages = [
     { src: bb01, alt: "Interior da barbearia 1" },
     { src: bb02, alt: "Interior da barbearia 2" },
-    { src: bb03, alt: "Interior da barbearia 3" },
     { src: fotoCorte, alt: "Corte de cabelo detalhado" },
   ];
 
   return (
     <div className="bg-gray-900 text-white min-h-screen">
       <div className="container mx-auto px-4 py-16">
-        
         <section className="mb-24 text-center">
           <h1 className="text-5xl font-bold mb-4 text-yellow-400 tracking-tight">
             Nossa História
           </h1>
           <p className="text-lg text-gray-300 max-w-3xl mx-auto">
-            Mais do que uma barbearia, somos um ponto de encontro para cavalheiros que valorizam a tradição, o estilo e um serviço impecável. Aqui, cada corte é uma obra de arte.
+            Mais do que uma barbearia, somos um ponto de encontro para
+            cavalheiros que valorizam a tradição, o estilo e um serviço
+            impecável. Aqui, cada corte é uma obra de arte.
           </p>
         </section>
 
@@ -36,15 +36,18 @@ export default function Sobre() {
               <img
                 src={gabrielPng}
                 alt="Barbeiro Gabriel"
-                className="rounded-full w-80 h-80 md:w-96 md:h-96 object-cover border-4 border-yellow-400 shadow-2xl"
+                className="w-96 h-[28rem] md:w-[32rem] md:h-[32rem] object-cover border-4 border-yellow-400 shadow-2xl rounded-xl"
               />
             </div>
+
             <div className="text-center md:text-left">
-              <h2 className="text-4xl font-bold mb-4">
-                Conheça o Mestre
-              </h2>
+              <h2 className="text-4xl font-bold mb-4">Conheça o Mestre</h2>
               <p className="text-gray-300 text-lg mb-6">
-                Com mais de uma década de experiência, Gabriel (ou "Chefe") não é apenas um barbeiro, é um artista. Especialista em cortes clássicos e tendências modernas, ele dedica seu tempo a entender o estilo de cada cliente, garantindo um resultado que vai além das expectativas.
+                Com mais de uma década de experiência, Gabriel (ou "Chefe") não
+                é apenas um barbeiro, é um artista. Especialista em cortes
+                clássicos e tendências modernas, ele dedica seu tempo a entender
+                o estilo de cada cliente, garantindo um resultado que vai além
+                das expectativas.
               </p>
               <div className="flex justify-center md:justify-start space-x-4">
                 <a
@@ -73,7 +76,8 @@ export default function Sobre() {
                 <CardTitle className="text-2xl font-bold">Tradição</CardTitle>
               </CardHeader>
               <CardContent className="text-center text-gray-300">
-                Respeitamos as técnicas clássicas da barbearia, trazendo a navalha e a tesoura para o centro da nossa arte.
+                Respeitamos as técnicas clássicas da barbearia, trazendo a
+                navalha e a tesoura para o centro da nossa arte.
               </CardContent>
             </Card>
 
@@ -85,7 +89,8 @@ export default function Sobre() {
                 <CardTitle className="text-2xl font-bold">Qualidade</CardTitle>
               </CardHeader>
               <CardContent className="text-center text-gray-300">
-                Utilizamos apenas os melhores produtos e ferramentas do mercado para garantir um acabamento perfeito em cada serviço.
+                Utilizamos apenas os melhores produtos e ferramentas do mercado
+                para garantir um acabamento perfeito em cada serviço.
               </CardContent>
             </Card>
 
@@ -97,16 +102,15 @@ export default function Sobre() {
                 <CardTitle className="text-2xl font-bold">Comunidade</CardTitle>
               </CardHeader>
               <CardContent className="text-center text-gray-300">
-                Acreditamos que a barbearia é um espaço de diálogo, amizade e troca de ideias. Sinta-se em casa.
+                Acreditamos que a barbearia é um espaço de diálogo, amizade e
+                troca de ideias. Sinta-se em casa.
               </CardContent>
             </Card>
           </div>
         </section>
 
         <section className="mb-24">
-          <h2 className="text-4xl font-bold text-center mb-12">
-            Nosso Espaço
-          </h2>
+          <h2 className="text-4xl font-bold text-center mb-12">Nosso Espaço</h2>
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
             {galleryImages.map((image, index) => (
               <div
@@ -128,7 +132,8 @@ export default function Sobre() {
             Pronto para transformar seu estilo?
           </h2>
           <p className="text-lg text-gray-300 mb-8">
-            Sua cadeira está esperando por você. Agende seu horário e viva a experiência completa.
+            Sua cadeira está esperando por você. Agende seu horário e viva a
+            experiência completa.
           </p>
           <Button
             asChild
@@ -138,7 +143,6 @@ export default function Sobre() {
             <Link to="/agendamento">Agendar Horário</Link>
           </Button>
         </section>
-        
       </div>
     </div>
   );

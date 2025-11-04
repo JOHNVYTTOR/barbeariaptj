@@ -6,10 +6,6 @@ import {
   CarouselPrevious,
 } from "@/components/ui/carousel";
 import { Card, CardContent, CardFooter } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-// import { Link } from "react-router-dom"; // Link não é mais usado aqui
-import { useCart } from "@/hooks/CartContext"; // <-- 1. Importa o Hook do Carrinho
-import { toast } from "sonner"; // <-- 2. Importa o toast para notificação
 
 // --- Interface para o Produto ---
 // ATUALIZADA para bater com o DashboardAdmin e a API
@@ -28,15 +24,7 @@ interface ProductCarouselProps {
 
 export function ProductCarousel({ products }: ProductCarouselProps) {
   if (!products || products.length === 0) return null;
-
-  // --- 3. Pega a função de adicionar ao carrinho ---
-  const { addItem } = useCart();
-
-  const handleAddToCart = (product: Produto) => {
-    addItem(product, 1);
-    toast.success(`${product.nomeProduto} adicionado ao carrinho!`);
-  };
-
+  
   return (
     <Carousel
       opts={{
@@ -75,15 +63,6 @@ export function ProductCarousel({ products }: ProductCarouselProps) {
                   <p className="font-semibold text-xl text-yellow-400">
                     R$ {product.preco.toFixed(2)}
                   </p>
-
-                  {/* --- 5. Botão "Ver Produto" alterado --- */}
-                  <Button
-                    onClick={() => handleAddToCart(product)} // Chama a função do carrinho
-                    className="w-full mt-2 bg-white/10 backdrop-blur-sm border border-white/20 text-white hover:bg-yellow-400 hover:text-black transition-all duration-300"
-                  >
-                    Adicionar ao Carrinho
-                  </Button>
-                  {/* --- Fim da alteração 5 --- */}
 
                 </CardFooter>
               </Card>

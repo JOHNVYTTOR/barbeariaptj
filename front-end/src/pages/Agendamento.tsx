@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom"; // <-- 1. IMPORTADO
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 // import { Navigation } from "@/components/ui/navigation"; // Comentado caso não esteja em uso
@@ -8,7 +9,7 @@ import { Input } from "@/components/ui/input";
 import { Checkbox } from "@/components/ui/checkbox";
 import { ChevronLeft, ChevronRight, Check } from "lucide-react";
 import { toast } from "sonner";
-import { api } from '@/api'; // Corrigido o caminho da importação
+import { api } from '../api'; // Corrigido o caminho da importação
 
 // --- Interfaces ---
 
@@ -110,6 +111,8 @@ const generateDailyTemplate = (selectedDate: Date): HorarioDisponivelAPI[] => {
 // --- Componente de Agendamento ---
 
 const Agendamento = () => {
+  const navigate = useNavigate(); // <-- 2. INICIALIZADO
+  
   // --- Estados de Controle ---
   const [step, setStep] = useState(1);
   const [selectedServices, setSelectedServices] = useState<number[]>([]);
@@ -119,7 +122,7 @@ const Agendamento = () => {
   // Armazena o objeto completo { id, horarioString, horarioISO }
   const [selectedTime, setSelectedTime] = useState<HorarioSelecionado>(null); 
   
-  const [nome, setClientNome] = useState(""); // Revertido para estado de string simples
+  const [nomeUsuario, setNomeUsuario] = useState(""); // Revertido para estado de string simples
 
   // --- Estados de Dados (Serviços) ---
   const [apiServices, setApiServices] = useState<Servico[]>([]);
@@ -272,9 +275,24 @@ const Agendamento = () => {
     setStep(step + 1);
   };
 
+  // --- Cálculo de Totais (Memorização) ---
+  // (Movido para antes de 'handleConfirm' para garantir que 'selectedServicesData' esteja disponível)
+  const selectedServicesData = apiServices.filter(s => selectedServices.includes(s.idServico));
+
+  const totalPrice = selectedServicesData.reduce((total, servico) => {
+    let numericPrice: number;
+    if (typeof servico.preco === 'number') {
+      numericPrice = servico.preco;
+    } else {
+      numericPrice = parseFloat(String(servico.preco).replace("R$ ", "").replace(",", "."));
+    }
+    return total + (isNaN(numericPrice) ? 0 : numericPrice);
+  }, 0);
+
+
   // Confirmação final do agendamento (COM AUTOMAÇÃO)
   const handleConfirm = async () => {
-    if (!nome) {
+    if (!nomeUsuario) {
       toast.error("Campo obrigatório", {
         description: "Por favor, informe seu nome para o agendamento.",
       });
@@ -297,7 +315,6 @@ const Agendamento = () => {
       usuario: { idUsuario: 1 }, 
       servico: { idServico: selectedServicesData[0].idServico },
       dataHora: selectedTime.horarioISO, // Usa o ISO do objeto 'selectedTime'
-      nomeCliente: nome // Adiciona o nome digitado
     };
 
     try {
@@ -326,7 +343,10 @@ const Agendamento = () => {
       setSelectedServices([]);
       setSelectedDate(new Date());
       setSelectedTime(null);
-      setClientNome("");
+      setNomeUsuario("");
+
+      // <-- 3. NAVEGAÇÃO ADICIONADA
+      navigate('/'); // Redireciona para a Home
 
     } catch (error: any) {
       console.error("Erro ao confirmar agendamento:", error);
@@ -382,20 +402,6 @@ const Agendamento = () => {
       </div>
     );
   };
-
-  // --- Cálculo de Totais (Memorização) ---
-  const selectedServicesData = apiServices.filter(s => selectedServices.includes(s.idServico));
-
-  const totalPrice = selectedServicesData.reduce((total, servico) => {
-    let numericPrice: number;
-    if (typeof servico.preco === 'number') {
-      numericPrice = servico.preco;
-    } else {
-      numericPrice = parseFloat(String(servico.preco).replace("R$ ", "").replace(",", "."));
-    }
-    return total + (isNaN(numericPrice) ? 0 : numericPrice);
-  }, 0);
-
 
   // --- Renderização Principal (JSX) ---
 
@@ -500,15 +506,14 @@ const Agendamento = () => {
             {step === 3 && (
               <div className="space-y-6">
                 <div className="space-y-2">
-                  <Label htmlFor="nome">Seu Nome:</Label>
+                  <Label htmlFor="nomeUsuario">Seu Nome:</Label>
                   <Input
-                    id="nome"
+                    id="nomeUsuario"
                     type="text"
-                    value={nome}
-                    onChange={(e) => setClientNome(e.target.value)}
+                    value={nomeUsuario}
+                    onChange={(e) => setNomeUsuario(e.target.value)}
                     placeholder="Digite seu nome completo"
                     className="bg-gray-800 border-gray-700 text-gray-100 placeholder-gray-500"
-                    // REVERTIDO: Campo de nome é sempre editável
                   />
                 </div>
                 <div className="bg-gray-800 border border-gray-700 p-6 rounded-lg">
