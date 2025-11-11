@@ -30,6 +30,12 @@ public class UsuarioController {
 		return ResponseEntity.ok(novoUsuario);
 	}
 	
+	@PostMapping("/registerAdmin")
+	public ResponseEntity<Usuario> createUsuarioAdmin(@RequestBody Usuario usuario) {
+		Usuario novoUsuario = usuarioService.saveUsuarioAdmin(usuario);
+		return ResponseEntity.ok(novoUsuario);
+	}
+			
 	@GetMapping
 	public List<Usuario> getAllUsuarios() {
 		return usuarioService.getAllUsuarios();
@@ -40,10 +46,14 @@ public class UsuarioController {
 		return usuarioService.getUsuarioById(id);
 	}
 	
-	@PutMapping
-	public Usuario editUsuario(@RequestBody Usuario usuario) {
-		return usuarioService.saveUsuario(usuario);
-	}
+	@PutMapping("/{id}")
+    public ResponseEntity<Usuario> updateUsuario(@PathVariable Long id, @RequestBody Usuario usuarioDetails) {
+        
+        // Agora chama o método de ATUALIZAÇÃO, não o de salvar
+        Usuario usuarioAtualizado = usuarioService.updateUsuario(id, usuarioDetails);
+        return ResponseEntity.ok(usuarioAtualizado);
+    }
+
 	 
 	@DeleteMapping("/{id}")
 	public void deleteUsuario(@PathVariable Long id) {

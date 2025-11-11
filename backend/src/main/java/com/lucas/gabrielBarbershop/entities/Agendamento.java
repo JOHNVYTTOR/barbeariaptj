@@ -25,6 +25,10 @@ public class Agendamento {
 	private Usuario usuario;
 	
 	@ManyToOne
+	@JoinColumn(name = "profissional_id", nullable = true)
+	private Usuario profissional;
+	
+	@ManyToOne
 	@JoinColumn(name = "servicoid")
 	private Servico servico;
 	
@@ -32,16 +36,21 @@ public class Agendamento {
 	private LocalDateTime dataHora;
 	
 	@Column(name = "status", nullable = false)
-	private boolean status;
-
+	private String status;
+	
+	@Column(name = "nomeCliente", nullable = true)
+	private String nomeCliente;
+	
 	public Agendamento(Long idAgendamento, Usuario usuario, Servico servico, LocalDateTime dataHora,
-			boolean status) {
+			String status, String nomeCliente, Usuario profissional) {
 		super();
 		this.idAgendamento = idAgendamento;
 		this.usuario = usuario;
 		this.servico = servico;
 		this.dataHora = dataHora;
 		this.status = status;
+		this.nomeCliente = nomeCliente;
+		this.profissional = profissional;
 	}
 	
 	public Agendamento() {
@@ -80,11 +89,29 @@ public class Agendamento {
 		this.dataHora = dataHora;
 	}
 
-	public boolean getStatus() {
+	public String getStatus() {
 		return status;
 	}
 
-	public void setStatus(boolean status) {
+	public void setStatus(String status) {
 		this.status = status;
 	}
+
+	public String getNomeCliente() {
+		return nomeCliente;
+	}
+
+	public void setNomeCliente(String nomeCliente) {
+		this.nomeCliente = nomeCliente;
+	}
+
+	public Usuario getProfissional() {
+		return profissional;
+	}
+
+	public void setProfissional(Usuario profissional) {
+		this.profissional = profissional;
+	}
+	
+	
 }

@@ -3,10 +3,12 @@ package com.lucas.gabrielBarbershop.controllers;
 import java.util.List;
 
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
@@ -40,4 +42,18 @@ public class AgendamentoController {
     public void deletarAgendamento(@PathVariable Long id) {
         agendamentoService.deletarAgendamentoById(id);
     }
+    
+    @PutMapping("/{id}")
+    public ResponseEntity<Agendamento> updateAgendamento(@PathVariable Long id, @RequestBody Agendamento agendamentoDetails) {
+        // O seu 'AgendamentoService.java' (que está no Canvas)
+        // já tem a lógica correta no método 'salvarAgendamento'.
+        // O método 'save' do JpaRepository funciona para criar e atualizar.
+        
+        // Apenas garantimos que o ID está correto
+        agendamentoDetails.setIdAgendamento(id); 
+        
+        Agendamento agendamentoAtualizado = agendamentoService.salvarAgendamento(agendamentoDetails);
+        return ResponseEntity.ok(agendamentoAtualizado);
+    }
+
 }

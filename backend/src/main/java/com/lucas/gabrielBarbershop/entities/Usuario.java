@@ -35,12 +35,16 @@ public class Usuario {
 	@Column(name = "telefone", nullable = false)
 	private String telefone;
 	
+	@Column(name = "fotoUrl", nullable = true)
+	private String fotoUrl;
+	
 	@ManyToOne
 	@JoinColumn(name = "tipo_usuario_id", nullable = false)
 	@JsonIgnoreProperties("usuarios")
 	private TipoUsuario tipoUsuario;
 
-	public Usuario(Long idUsuario, String nomeUsuario, String cpf, String email, String senha, String telefone, TipoUsuario tipoUsuario) {
+	public Usuario(Long idUsuario, String nomeUsuario, String cpf, String email, String senha,
+			String telefone, TipoUsuario tipoUsuario, String fotoUrl) {
 		super();
 		this.idUsuario = idUsuario;
 		this.nomeUsuario = nomeUsuario;
@@ -49,6 +53,7 @@ public class Usuario {
 		this.senha = senha;
 		this.tipoUsuario = tipoUsuario;
 		this.telefone = telefone;
+		this.fotoUrl = fotoUrl;
 	}
 	
 	public Usuario() {
@@ -66,7 +71,7 @@ public class Usuario {
 	public String getNomeUsuario() {
 	    return nomeUsuario;
 	}
-
+	
 	public void setNomeUsuario(String nomeUsuario) {
 	    this.nomeUsuario = nomeUsuario;
 	}
@@ -109,5 +114,13 @@ public class Usuario {
 
 	public void setTelefone(String telefone) {
 		this.telefone = telefone;
+	}
+
+	public String getFotoUrl() {
+		return fotoUrl;
+	}
+
+	public void setFotoUrl(String fotoUrl) {
+		this.fotoUrl = fotoUrl;
 	}
 }

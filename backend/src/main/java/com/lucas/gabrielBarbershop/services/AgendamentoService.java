@@ -23,6 +23,10 @@ public class AgendamentoService {
 	    }
 	 
 	    public Agendamento salvarAgendamento(Agendamento agendamento) {
+	        if (agendamento.getIdAgendamento() == null || agendamento.getStatus() == null || agendamento.getStatus().isEmpty()) {
+	            agendamento.setStatus("Pendente");
+	        }
+	        
 	        return agendamentoRepository.save(agendamento);
 	    }
 

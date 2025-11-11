@@ -11,4 +11,11 @@ import com.lucas.gabrielBarbershop.entities.Agendamento;
 public interface AgendamentoRepository extends JpaRepository<Agendamento, Long> {
 
 	List<Agendamento> findByUsuarioIdUsuario(Long idUsuario);
+	
+	boolean existsByServicoIdServicoAndStatus(Long idServico, String status);
+	
+	boolean existsByProfissionalIdUsuarioAndStatus(Long idUsuario, String status);
+
+    // 👇 ADICIONE ESTE MÉTODO (para encontrar todos os agendamentos dele)
+    List<Agendamento> findAllByProfissionalIdUsuario(Long idUsuario);	
 }

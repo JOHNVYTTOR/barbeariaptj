@@ -10,9 +10,6 @@ import org.springframework.stereotype.Service;
 import com.lucas.gabrielBarbershop.entities.HorarioDisponivel;
 import com.lucas.gabrielBarbershop.repositories.HorarioDisponivelRepository;
 
-import jakarta.persistence.EntityNotFoundException;
-import jakarta.transaction.Transactional;
-
 @Service
 public class HorarioDisponivelService {
 
@@ -40,4 +37,6 @@ public class HorarioDisponivelService {
     				.orElseThrow(() -> new RuntimeException("Horário não encontrado"));
     		horario.setDisponivel(disponivel); 
     		horarioDisponivelRepository.save(horario); }
+    
+    
 }
