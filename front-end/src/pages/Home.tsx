@@ -12,8 +12,8 @@ import barberHero from "../assets/chefe_png.png";
 import { motion, AnimatePresence } from "framer-motion";
 import barberImage from "@/assets/bigode_img.jpg";
 import haircutImage from "@/assets/navalhinha_img.jpg";
-import completeImage from "@/assets/bigode_img.jpg";
-import mustacheImage from "@/assets/tudo_img.jpg";
+import completeImage from "@/assets/barbaCabelo.png";
+import mustacheImage from "@/assets/barba.jpg";
 import { useState } from "react";
 
 const Home = () => {
