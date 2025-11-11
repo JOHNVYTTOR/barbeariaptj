@@ -51,7 +51,7 @@ export default function Sobre() {
               </p>
               <div className="flex justify-center md:justify-start space-x-4">
                 <a
-                  href="#"
+                  href="https://www.instagram.com/barbershopgabrielrocha"
                   target="_blank"
                   rel="noopener noreferrer"
                   className="text-gray-400 hover:text-yellow-400 transition-colors"

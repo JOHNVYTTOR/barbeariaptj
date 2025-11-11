@@ -20,14 +20,13 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Calendar } from '@/components/ui/calendar';
 import { Switch } from '@/components/ui/switch';
-// import { Sidebar } from '@/components/ui/sidebar'; // Removido (Layout Limpo)
 import { toast } from "sonner";
-import { api } from '../api.ts'; // Importa a instância configurada do Axios
-import { format } from 'date-fns'; // Para formatar a data para a API
-import { ptBR } from 'date-fns/locale'; // Para localização do calendário
+import { api } from '../api.ts'; // Corrigido: Usando o caminho relativo
+import { format } from 'date-fns'; 
+import { ptBR } from 'date-fns/locale'; 
 
-// --- Tipos de Dados (Interfaces baseadas no seu Backend) ---
-// (Estas são as interfaces do CÓDIGO 1 - Lógica Avançada)
+// ... (Interfaces, generateDailyTemplate, etc. - Sem mudanças) ...
+
 interface TipoUsuario {
   id: number;
   nomeTipoUsuario: string;
@@ -35,10 +34,12 @@ interface TipoUsuario {
 
 interface Usuario {
   idUsuario: number;
-  nomeUsuario: string;
+  nomeUsuario: string; 
   email: string;
+  senha: string;
   cpf: string;
   telefone: string;
+  fotoUrl: string; 
   tipoUsuario: TipoUsuario;
 }
 
@@ -54,57 +55,53 @@ interface Produto {
   nomeProduto: string; 
   descricao: string;   
   preco: number;
-  estoque: number;     
+  estoque: number; 
   imgUrl: string;   
 }
 
 interface Agendamento {
   idAgendamento: number;
-  dataHora: string; // Vem como ISO string do backend
+  dataHora: string; 
   status: 'Pendente' | 'Concluído' | 'Cancelado';
-  usuario: Usuario;
+  usuario: Usuario; 
   servico: Servico;
+  nomeCliente?: string; 
+  profissional?: Usuario; // Campo para o profissional
 }
 
 interface HorarioDisponivel {
   idHorarioDisponivel: number | null; 
-  horarios: string; // Formato HH:MM
+  horarios: string; 
   disponivel: boolean;
   data: Date;
-  isBooked?: boolean; // Flag temporária da UI
+  isBooked?: boolean; 
 }
 
-// --- FUNÇÃO GERADORA DE TEMPLATE ---
-// (Esta é a função do CÓDIGO 1 - Lógica Avançada)
+// --- FUNÇÃO GERADORA DE TEMPLATE (Horários baseados na foto) ---
 const generateDailyTemplate = (selectedDate: Date): HorarioDisponivel[] => {
   const template: HorarioDisponivel[] = [];
-  const date = new Date(selectedDate); 
+  const date = new Date(selectedDate);
+  const dayOfWeek = date.getDay(); 
+
+  const pad = (n: number) => n.toString().padStart(2, '0');
+  const yyyy = date.getFullYear();
+  const mm = pad(date.getMonth() + 1);
+  const dd = pad(date.getDate());
+  const dateString = `${yyyy}-${mm}-${dd}`;
 
   const createEntry = (h: number, m: number): HorarioDisponivel => {
-    const d = new Date(date);
-    d.setHours(h, m, 0, 0); 
-
-    const yyyy = d.getFullYear();
-    const mm = String(d.getMonth() + 1).padStart(2, '0'); 
-    const dd = String(d.getDate()).padStart(2, '0');
-    
-    const hh = String(d.getHours()).padStart(2, '0');
-    const min = String(d.getMinutes()).padStart(2, '0');
-    const ss = String(d.getSeconds()).padStart(2, '0');
-
-    const isoLocalString = `${yyyy}-${mm}-${dd}T${hh}:${min}:${ss}`;
-
+    const horarioISO = `${dateString}T${pad(h)}:${pad(m)}:00`;
     return {
-      idHorarioDisponivel: null, 
-      horarios: isoLocalString,   
-      disponivel: true,           
-      data: date,                 
-      isBooked: false             
+      idHorarioDisponivel: -(new Date(horarioISO).getTime()), 
+      horarios: horarioISO,
+      disponivel: true, 
+      data: date,
+      isBooked: false
     };
   };
 
   const incrementTime = (h: number, m: number): {h: number, m: number} => {
-      m += 45;
+      m += 45; 
       if (m >= 60) {
         h += 1;
         m -= 60;
@@ -112,66 +109,126 @@ const generateDailyTemplate = (selectedDate: Date): HorarioDisponivel[] => {
       return {h, m};
   };
 
-  // --- Sessão da Manhã ---
-  let h = 7;
-  let m = 30;
-  const breakStartH = 12;
-  const breakStartM = 40;
+  let h: number, m: number;
+  let morningStartH = 0, morningStartM = 0;
+  let morningEndH = 0, morningEndM = 0;
+  let afternoonStartH = 0, afternoonStartM = 0;
+  let afternoonEndH = 0, afternoonEndM = 0;
+  let hasLunchBreak = true;
+
+  switch (dayOfWeek) {
+    case 1: case 2: case 4:
+      morningStartH = 9; morningStartM = 0;  
+      morningEndH = 12; morningEndM = 0;    
+      afternoonStartH = 13; afternoonStartM = 0; 
+      afternoonEndH = 19; afternoonEndM = 30;  
+      break;
+    case 3: 
+      morningStartH = 9; morningStartM = 0;  
+      morningEndH = 12; morningEndM = 30;   
+      afternoonStartH = 13; afternoonStartM = 0; 
+      afternoonEndH = 19; afternoonEndM = 30;  
+      break;
+    case 5: 
+      morningStartH = 9; morningStartM = 0;  
+      morningEndH = 12; morningEndM = 0;    
+      afternoonStartH = 13; afternoonStartM = 0; 
+      afternoonEndH = 20; afternoonEndM = 0;   
+      break;
+    case 6: 
+      morningStartH = 10; morningStartM = 0; 
+      morningEndH = 18; morningEndM = 0;   
+      hasLunchBreak = false; 
+      break;
+    case 0: 
+    default:
+      return []; 
+  }
+
+  h = morningStartH;
+  m = morningStartM;
   
-  while (h < breakStartH || (h === breakStartH && m < breakStartM)) {
+  while (h < morningEndH || (h === morningEndH && m <= morningEndM)) {
+    const nextSlot = incrementTime(h, m);
+    if (nextSlot.h > morningEndH || (nextSlot.h === morningEndH && nextSlot.m > morningEndM)) {
+      if (h === morningEndH && m === morningEndM) {
+          template.push(createEntry(h, m)); 
+      }
+      break; 
+    }
     template.push(createEntry(h, m));
-    const next = incrementTime(h, m);
-    h = next.h;
-    m = next.m;
+    h = nextSlot.h;
+    m = nextSlot.m;
   }
   
-  // --- Sessão da Tarde ---
-  h = 13;
-  m = 40;
-  const endTimeH = 20; 
-  const endTimeM = 0;
-  
-  while (h < endTimeH || (h === endTimeH && m <= endTimeM)) {
-    template.push(createEntry(h, m));
-    const next = incrementTime(h, m);
-    h = next.h;
-    m = next.m;
+  if (hasLunchBreak) {
+    h = afternoonStartH;
+    m = afternoonStartM;
+    while (h < afternoonEndH || (h === afternoonEndH && m <= afternoonEndM)) {
+      const nextSlot = incrementTime(h, m);
+      if (nextSlot.h > afternoonEndH || (nextSlot.h === afternoonEndH && nextSlot.m > afternoonEndM)) {
+          if (h === afternoonEndH && m === afternoonEndM) {
+            template.push(createEntry(h, m)); 
+          }
+        break; 
+      }
+      template.push(createEntry(h, m));
+      h = nextSlot.h;
+      m = nextSlot.m;
+    }
   }
-  
   return template;
 };
 
 
 // --- Componente Principal do Dashboard ---
 const Dashboard = () => {
-  // --- Estados de Dados ---
-  // (Estes são os estados do CÓDIGO 1 - Lógica Avançada)
+// ... (Estados, fetch functions, etc. - Sem mudanças) ...
   const [agendamentos, setAgendamentos] = useState<Agendamento[]>([]);
   const [servicos, setServicos] = useState<Servico[]>([]);
   const [produtos, setProdutos] = useState<Produto[]>([]);
   const [clientes, setClientes] = useState<Usuario[]>([]);
   const [horarios, setHorarios] = useState<HorarioDisponivel[]>([]);
+  const [profissionais, setProfissionais] = useState<Usuario[]>([]); 
 
   // --- Estados de UI ---
   const [loading, setLoading] = useState(true);
   const [servicoDialogAberto, setServicoDialogAberto] = useState(false);
   const [produtoDialogAberto, setProdutoDialogAberto] = useState(false);
+  const [profissionalDialogAberto, setProfissionalDialogAberto] = useState(false); 
+  
   const [servicoEditando, setServicoEditando] = useState<Partial<Servico> | null>(null); 
   const [produtoEditando, setProdutoEditando] = useState<Partial<Produto> | null>(null);
+  const [profissionalEditando, setProfissionalEditando] = useState<Partial<Usuario> | null>(null); 
+  
   const [dataSelecionada, setDataSelecionada] = useState<Date | undefined>(new Date());
-  // novoHorario removido
+
+  // --- Lógica de Filtro de Histórico ---
+  const [mostrarHistorico, setMostrarHistorico] = useState(false);
+
+  const agendamentosFiltrados = agendamentos.filter(ag => {
+    if (mostrarHistorico) {
+      return true; 
+    }
+    const ontem = new Date();
+    ontem.setDate(ontem.getDate() - 1);
+    ontem.setHours(0, 0, 0, 0); 
+    const dataAg = new Date(ag.dataHora);
+    return dataAg >= ontem;
+  });
+  // --- Fim da Lógica de Filtro ---
+
 
   // --- Funções de Busca (Fetch) ---
-  // (Estas são as funções do CÓDIGO 1 - Lógica Avançada)
   const fetchAgendamentos = useCallback(async () => {
     try {
       const response = await api.get('/agendamentos'); 
       setAgendamentos(response.data);
-      return response.data; // <-- Retorna os dados
+      return response.data; 
     } catch (error) {
       console.error("Erro fetchAgendamentos:", error);
       toast.error('Erro ao buscar agendamentos.');
-      return []; // <-- Retorna vazio
+      return []; 
     }
   }, []);
 
@@ -204,24 +261,34 @@ const Dashboard = () => {
       toast.error('Erro ao buscar clientes.');
     }
   }, []);
+  
+  const fetchProfissionais = useCallback(async () => {
+    try {
+      const response = await api.get('/usuarios'); 
+      setProfissionais(response.data.filter((u: Usuario) => u.tipoUsuario?.nomeTipoUsuario === 'Admin'));
+    } catch (error) {
+      console.error("Erro fetchProfissionais:", error);
+      toast.error('Erro ao buscar profissionais.');
+    }
+  }, []);
 
-  // (Função fetchHorarios do CÓDIGO 1 - Lógica Avançada)
   const fetchHorarios = useCallback(async (data: Date, currentAgendamentos: Agendamento[]) => {
     let horariosDoDia: HorarioDisponivel[] = [];
     let errorOccurred = false;
+    const dateOnly = new Date(data.getFullYear(), data.getMonth(), data.getDate());
 
     try {
-      const dataFormatada = format(data, 'yyyy-MM-dd');
+      const dataFormatada = format(dateOnly, 'yyyy-MM-dd'); 
       const response = await api.get(`/horarios/disponiveis/${dataFormatada}`);
       
       if (response.data && response.data.length > 0) {
         horariosDoDia = response.data;
       } else {
-        horariosDoDia = generateDailyTemplate(data);
+        horariosDoDia = generateDailyTemplate(dateOnly); 
       }
     } catch (error: any) {
       if (error.response?.status === 404) {
-        horariosDoDia = generateDailyTemplate(data);
+        horariosDoDia = generateDailyTemplate(dateOnly); 
       } else {
         errorOccurred = true;
         setHorarios([]);
@@ -238,13 +305,15 @@ const Dashboard = () => {
       );
 
       const horariosAtualizados = horariosDoDia.map(h => {
-        const horarioIso = new Date(h.horarios).toISOString();
+        const horarioDate = new Date(h.horarios);
+        const horarioIso = horarioDate.toISOString();
         const estaAgendado = horariosAgendados.has(horarioIso);
 
         return {
           ...h,
           disponivel: estaAgendado ? false : h.disponivel, 
-          isBooked: estaAgendado 
+          isBooked: estaAgendado,
+          data: dateOnly 
         };
       })
       .sort((a, b) => new Date(a.horarios).getTime() - new Date(b.horarios).getTime());
@@ -255,7 +324,6 @@ const Dashboard = () => {
 
 
   // --- Efeito de Carregamento Inicial ---
-  // (Lógica do CÓDIGO 1 - Lógica Avançada)
   useEffect(() => {
     const loadDashboardData = async () => {
       setLoading(true);
@@ -264,6 +332,7 @@ const Dashboard = () => {
         fetchServicos(),
         fetchProdutos(),
         fetchClientes(),
+        fetchProfissionais() 
       ]);
       
       if (dataSelecionada) {
@@ -273,10 +342,9 @@ const Dashboard = () => {
     };
     loadDashboardData();
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []); // Dependências vazias (só roda 1 vez)
+  }, []); 
 
   // Efeito para recarregar horários quando a data selecionada muda
-  // (Lógica do CÓDIGO 1 - Lógica Avançada)
   useEffect(() => {
     if (dataSelecionada) {
       fetchHorarios(dataSelecionada, agendamentos);
@@ -284,12 +352,29 @@ const Dashboard = () => {
   }, [dataSelecionada, fetchHorarios, agendamentos]);
 
   // --- Handlers de Ações (CRUD) ---
-  // (Todos os Handlers do CÓDIGO 1 - Lógica Avançada)
 
-  // Agendamentos (com re-fetch de horários)
+  // Agendamentos
   const handleUpdateAgendamentoStatus = async (agendamento: Agendamento, status: 'Concluído' | 'Cancelado') => {
     try {
-      await api.put(`/agendamentos/${agendamento.idAgendamento}`, { ...agendamento, status: status });
+      // ===== CORREÇÃO AQUI =====
+      // Em vez de enviar o objeto 'agendamento' inteiro (que pode dar erro 500),
+      // enviamos um payload limpo, apenas com os IDs das relações.
+      // O back-end (AgendamentoService.java) já espera por isso.
+      const payload = {
+        idAgendamento: agendamento.idAgendamento,
+        dataHora: agendamento.dataHora,
+        nomeCliente: agendamento.nomeCliente,
+        status: status, // O novo status
+        
+        // Envia apenas os IDs das entidades relacionadas
+        usuario: agendamento.usuario ? { idUsuario: agendamento.usuario.idUsuario } : null,
+        servico: agendamento.servico ? { idServico: agendamento.servico.idServico } : null,
+        profissional: agendamento.profissional ? { idUsuario: agendamento.profissional.idUsuario } : null
+      };
+      
+      await api.put(`/agendamentos/${agendamento.idAgendamento}`, payload);
+      // ===== FIM DA CORREÇÃO =====
+
       toast.success(`Agendamento ${status === 'Concluído' ? 'concluído' : 'cancelado'}!`);
 
       const novosAgendamentos = await fetchAgendamentos(); 
@@ -333,13 +418,15 @@ const Dashboard = () => {
       fetchServicos(); 
     } catch (error) {
       console.error("Erro handleDeleteServico:", error);
-      toast.error('Erro ao excluir serviço. Verifique se ele não está sendo usado em agendamentos.');
+      toast.error('Erro ao excluir serviço.', {
+        description: 'Verifique se este serviço não está sendo usado em agendamentos PENDENTES.'
+      });
     }
   };
 
-  // Produtos (com validação para os campos novos)
+  // Produtos
   const handleSaveProduto = async (formData: Partial<Produto>) => {
-    if (!formData.nomeProduto || !formData.descricao || formData.preco === undefined || formData.estoque === undefined || !formData.imgUrl) {
+    if (!formData.nomeProduto || !formData.descricao || formData.preco === undefined || formData.estoque === undefined || !formData.imgUrl) { 
         toast.error("Preencha todos os campos do produto.");
         return;
     }
@@ -381,26 +468,88 @@ const Dashboard = () => {
       toast.error('Erro ao excluir cliente. Verifique se ele não possui agendamentos.');
     }
   };
+  
+  // Profissionais
+  const handleSaveProfissional = async (formData: Partial<Usuario>) => {
+    if (!formData.nomeUsuario || !formData.email || (!formData.idUsuario && !formData.senha) || !formData.cpf || !formData.telefone || !formData.fotoUrl) {
+        toast.error("Preencha todos os campos do profissional (senha é obrigatória ao criar).");
+        return;
+    }
 
-  // Horários (sem 'handleAdicionarHorario')
+    try {
+      if (formData.idUsuario) {
+        // Editar (PUT)
+        const payload = {
+            idUsuario: formData.idUsuario,
+            nomeUsuario: formData.nomeUsuario, 
+            email: formData.email,
+            cpf: formData.cpf,
+            telefone: formData.telefone,
+            fotoUrl: formData.fotoUrl,
+            tipoUsuario: formData.tipoUsuario 
+        };
+        await api.put(`/usuarios/${formData.idUsuario}`, payload); // Assumindo que seu back-end aceita PUT em /usuarios
+        toast.success('Profissional atualizado com sucesso!');
+      } else {
+        // Criar (POST) - Usando /usuarios/registerAdmin
+        const payload = {
+            nomeUsuario: formData.nomeUsuario, 
+            email: formData.email,
+            senha: formData.senha, 
+            cpf: formData.cpf,
+            telefone: formData.telefone,
+            fotoUrl: formData.fotoUrl
+        };
+        await api.post('/usuarios/registerAdmin', payload); 
+        toast.success('Profissional criado com sucesso!');
+      }
+      setProfissionalDialogAberto(false);
+      fetchProfissionais(); 
+    } catch (error) {
+      console.error("Erro handleSaveProfissional:", error);
+      toast.error('Erro ao salvar profissional.');
+    }
+  };
+
+  const handleDeleteProfissional = async (idUsuario: number) => {
+    try {
+      await api.delete(`/usuarios/${idUsuario}`);
+      toast.success('Profissional excluído com sucesso!');
+      fetchProfissionais(); 
+    } catch (error) {
+      console.error("Erro handleDeleteProfissional:", error);
+      // ATUALIZADO: Mensagem de erro mais específica
+      toast.error('Erro ao excluir profissional.', {
+        description: 'Verifique se este profissional não possui agendamentos PENDENTES.'
+      });
+    }
+  };
+
+
+  // Horários
   const handleToggleHorario = (index: number) => {
     const novosHorarios = [...horarios];
     novosHorarios[index].disponivel = !novosHorarios[index].disponivel;
     setHorarios(novosHorarios);
   };
 
-  // handleSalvarHorarios (com lógica POST/PUT)
   const handleSalvarHorarios = async () => {
     if (!dataSelecionada) return;
 
+    const dateOnly = new Date(dataSelecionada.getFullYear(), dataSelecionada.getMonth(), dataSelecionada.getDate());
+
     const promises = horarios.map(h => {
+      const horarioDate = new Date(h.horarios);
+      horarioDate.setFullYear(dateOnly.getFullYear(), dateOnly.getMonth(), dateOnly.getDate());
+      const isoLocalString = format(horarioDate, "yyyy-MM-dd'T'HH:mm:ss");
+
       if (h.idHorarioDisponivel) {
         return api.put(`/horarios/${h.idHorarioDisponivel}/disponibilidade`, null, { 
           params: { disponivel: h.disponivel } 
         });
       } else {
         return api.post('/horarios', { 
-          horarios: h.horarios, 
+          horarios: isoLocalString, 
           disponivel: h.disponivel 
         });
       }
@@ -436,11 +585,20 @@ const Dashboard = () => {
     setProdutoEditando(null); 
     setProdutoDialogAberto(true);
   };
+  
+  const handleEditarProfissionalClick = (profissional: Usuario) => {
+    setProfissionalEditando(profissional);
+    setProfissionalDialogAberto(true);
+  };
+
+  const handleNovoProfissionalClick = () => {
+    setProfissionalEditando(null); 
+    setProfissionalDialogAberto(true);
+  };
+
 
   // ----- JSX DO DASHBOARD -----
-  // (Este é o JSX do CÓDIGO 2 - Layout Limpo)
-
-  if (loading && !servicoDialogAberto && !produtoDialogAberto) {
+  if (loading && !servicoDialogAberto && !produtoDialogAberto && !profissionalDialogAberto) { 
     return (
       <main className="flex-1 p-4 md:p-6 text-center text-white">Carregando Dashboard...</main>
     );
@@ -450,15 +608,12 @@ const Dashboard = () => {
     <main className="flex-1 p-4 md:p-6 overflow-x-hidden">
       <header className="grid grid-cols-3 items-center mb-4">
         
-        {/* Coluna 1: Vazia (para balancear) */}
         <div></div>
         
-        {/* Coluna 2: Título Centralizado */}
         <h1 className="text-3xl font-bold text-yellow-400 text-center">
           Dashboard
         </h1>
         
-        {/* Coluna 3: Ícone alinhado à direita */}
         <div className="flex justify-end">
           <Button variant="ghost" size="icon" className="text-gray-400 hover:text-white">
             <Bell className="h-6 w-6" />
@@ -475,13 +630,14 @@ const Dashboard = () => {
             <TabsTrigger value="produtos">Produtos</TabsTrigger>
             <TabsTrigger value="horarios">Horários</TabsTrigger>
             <TabsTrigger value="clientes">Clientes</TabsTrigger>
+            <TabsTrigger value="profissionais">Profissionais</TabsTrigger> 
           </TabsList>
         </div>
 
         {/* === Aba: Visão Geral === */}
         <TabsContent value="overview" className="mt-4">
           <div className="mb-4">
-            <Card className="bg-gray-800 border-gray-700 text-white max-w-sm mx-auto"> {/* Max-w e mx-auto adicionado */}
+            <Card className="bg-gray-800 border-gray-700 text-white max-w-sm mx-auto"> 
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                 <CardTitle className="text-sm font-medium">Agendamentos Pendentes (Hoje)</CardTitle>
                 <Check className="h-4 w-4 text-green-500" />
@@ -520,9 +676,21 @@ const Dashboard = () => {
           <Card className="bg-gray-800 border-gray-700 text-white">
             <CardHeader className="flex flex-row items-center justify-between">
               <CardTitle className="text-yellow-400">Gerenciar Agendamentos</CardTitle>
+              
+              <div className="flex items-center space-x-2">
+                <Switch
+                  id="mostrar-historico"
+                  checked={mostrarHistorico}
+                  onCheckedChange={setMostrarHistorico}
+                  className="data-[state=checked]:bg-yellow-400"
+                />
+                <Label htmlFor="mostrar-historico" className="text-sm text-gray-300">
+                  Mostrar histórico (mais de 1 dia)
+                </Label>
+              </div>
             </CardHeader>
             <CardContent className="overflow-x-auto">
-              <TabelaAgendamentos data={agendamentos} onUpdateStatus={handleUpdateAgendamentoStatus} />
+              <TabelaAgendamentos data={agendamentosFiltrados} onUpdateStatus={handleUpdateAgendamentoStatus} />
             </CardContent>
           </Card>
         </TabsContent>
@@ -552,7 +720,6 @@ const Dashboard = () => {
               </Button>
             </CardHeader>
             <CardContent className="overflow-x-auto">
-              {/* Esta TabelaProdutos agora é a do CÓDIGO 1 */}
               <TabelaProdutos data={produtos} onEdit={handleEditarProdutoClick} onDelete={handleDeleteProduto} />
             </CardContent>
           </Card>
@@ -582,7 +749,6 @@ const Dashboard = () => {
                 <div className="space-y-3 max-h-64 overflow-y-auto pr-2 mb-4">
                   {horarios.length > 0 ? horarios.map((h, index) => (
                     <div key={h.idHorarioDisponivel || `${h.data}-${h.horarios}`} className="flex items-center p-3 bg-gray-700 rounded-md">
-                      {/* Lógica de 'isBooked' (do CÓDIGO 1) aplicada ao Label */}
                       <Label 
                         htmlFor={`horario-${h.horarios}`} 
                         className={`text-base flex-grow ${h.isBooked ? 'text-gray-400 line-through' : ''}`}
@@ -595,15 +761,13 @@ const Dashboard = () => {
                         checked={h.disponivel}
                         onCheckedChange={() => handleToggleHorario(index)}
                         className="data-[state=checked]:bg-yellow-400"
-                        disabled={h.isBooked} // Lógica 'disabled' (do CÓDIGO 1)
+                        disabled={h.isBooked} 
                       />
                     </div>
                   )) : (
                     <p className='text-gray-400'>Nenhum horário encontrado ou cadastrado para este dia.</p>
                   )}
                 </div>
-
-                {/* Bloco de "Adicionar Horário Manual" (do CÓDIGO 2) REMOVIDO */}
 
                 <Button onClick={handleSalvarHorarios} className="w-full mt-4 bg-green-500 text-white hover:bg-green-600">
                   Salvar Alterações nos Horários
@@ -624,10 +788,25 @@ const Dashboard = () => {
             </CardContent>
           </Card>
         </TabsContent>
+
+        {/* === Aba: Profissionais === */}
+        <TabsContent value="profissionais" className="mt-4">
+          <Card className="bg-gray-800 border-gray-700 text-white">
+            <CardHeader className="flex flex-row items-center justify-between">
+              <CardTitle className="text-yellow-400">Gerenciar Profissionais (Admins)</CardTitle>
+              <Button onClick={handleNovoProfissionalClick} className="bg-yellow-400 text-black hover:bg-yellow-300">
+                <Plus className="h-4 w-4 mr-2" /> Adicionar Profissional
+              </Button>
+            </CardHeader>
+            <CardContent className="overflow-x-auto">
+              <TabelaProfissionais data={profissionais} onEdit={handleEditarProfissionalClick} onDelete={handleDeleteProfissional} />
+            </CardContent>
+          </Card>
+        </TabsContent>
+        
       </Tabs>
 
       {/* --- Dialogs (Pop-ups) --- */}
-      {/* (Estes são os Dialogs do CÓDIGO 1 - Lógica Avançada) */}
       <ServicoDialog
         key={servicoEditando?.idServico || 'new-servico'}
         open={servicoDialogAberto}
@@ -635,7 +814,6 @@ const Dashboard = () => {
         onSave={handleSaveServico}
         servico={servicoEditando}
       />
-      {/* CORREÇÃO: A 'key' deve usar 'idProduto' (da Lógica 1) */}
       <ProdutoDialog
         key={produtoEditando?.idProduto || 'new-produto'} 
         open={produtoDialogAberto}
@@ -643,46 +821,61 @@ const Dashboard = () => {
         onSave={handleSaveProduto}
         produto={produtoEditando}
       />
+      <ProfissionalDialog
+        key={profissionalEditando?.idUsuario || 'new-profissional'}
+        open={profissionalDialogAberto}
+        onOpenChange={setProfissionalDialogAberto}
+        onSave={handleSaveProfissional}
+        profissional={profissionalEditando}
+      />
     </main>
   );
 };
 
 // --- Componentes de Tabela ---
-// (Estas são as Tabelas do CÓDIGO 1 - Lógica Avançada)
 
 interface TabelaAgendamentosProps {
   data: Agendamento[];
   onUpdateStatus: (agendamento: Agendamento, status: 'Concluído' | 'Cancelado') => void;
 }
-const TabelaAgendamentos: React.FC<TabelaAgendamentosProps> = ({ data, onUpdateStatus }) => (
-  <Table>
-    <TableHeader>
-      <TableRow className="hover:bg-gray-700 border-gray-700">
-        <TableHead className="text-white">Cliente</TableHead>
-        <TableHead className="text-white">Data / Hora</TableHead>
-        <TableHead className="text-white">Serviço</TableHead>
-        <TableHead className="text-white">Status</TableHead>
-        <TableHead className="text-right text-white">Ações</TableHead>
-      </TableRow>
-    </TableHeader>
-    <TableBody>
-      {data.length > 0 ? data.map((ag) => (
-        <TableRow key={ag.idAgendamento} className="hover:bg-gray-700 border-gray-700">
-          {/* Usa idUsuario (Lógica 1) */}
-          <TableCell>{ag.usuario?.nomeUsuario || 'Cliente não encontrado'}</TableCell> 
-          <TableCell>{new Date(ag.dataHora).toLocaleString('pt-BR', { dateStyle: 'short', timeStyle: 'short' })}</TableCell>
-          <TableCell>{ag.servico?.nomeServico || 'Serviço não encontrado'}</TableCell>
-          <TableCell>
-            <span className={`px-2 py-1 rounded-full text-xs font-medium ${
-              ag.status === 'Pendente' ? 'bg-yellow-400 text-black' :
-              ag.status === 'Concluído' ? 'bg-green-500 text-white' :
-              'bg-red-500 text-white'
-            }`}>
-              {ag.status}
-            </span>
-          </TableCell>
-          <TableCell className="text-right space-x-2">
-            {ag.status === 'Pendente' && (
+const TabelaAgendamentos: React.FC<TabelaAgendamentosProps> = ({ data, onUpdateStatus }) => {
+  const now = new Date(); 
+  
+  return (
+    <Table>
+      <TableHeader>
+        <TableRow className="hover:bg-gray-700 border-gray-700">
+          <TableHead className="text-white">Cliente</TableHead>
+          <TableHead className="text-white">Profissional</TableHead> 
+          <TableHead className="text-white">Data / Hora</TableHead>
+          <TableHead className="text-white">Serviço</TableHead>
+          <TableHead className="text-white">Status</TableHead>
+          <TableHead className="text-right text-white">Ações</TableHead>
+        </TableRow>
+      </TableHeader>
+      <TableBody>
+        {data.length > 0 ? data.map((ag) => {
+          const dataAgendamento = new Date(ag.dataHora);
+          const horarioJaPassou = dataAgendamento < now;
+
+          let statusLabel = "";
+          let statusClass = "";
+          let acoes = null; 
+
+          if (ag.status === 'Cancelado') {
+            statusLabel = "Cancelado";
+            statusClass = "bg-red-500 text-white";
+          } else if (ag.status === 'Concluído') {
+            statusLabel = "Concluído (M)";
+            statusClass = "bg-green-500 text-white";
+          } else if (ag.status === 'Pendente' && horarioJaPassou) {
+            statusLabel = "Concluído (A)";
+            statusClass = "bg-blue-500 text-white";
+          } else if (ag.status === 'Pendente' && !horarioJaPassou) {
+            statusLabel = "Pendente";
+            statusClass = "bg-yellow-400 text-black";
+            
+            acoes = (
               <>
                 <Button onClick={() => onUpdateStatus(ag, 'Concluído')} variant="outline" size="icon" className="text-green-500 border-green-500 hover:bg-green-500 hover:text-white" title="Marcar como Concluído">
                   <Check className="h-4 w-4" />
@@ -691,17 +884,39 @@ const TabelaAgendamentos: React.FC<TabelaAgendamentosProps> = ({ data, onUpdateS
                   <X className="h-4 w-4" />
                 </Button>
               </>
-            )}
-          </TableCell>
-        </TableRow>
-      )) : (
-        <TableRow>
-          <TableCell colSpan={5} className="text-center text-gray-400">Nenhum agendamento encontrado.</TableCell>
-        </TableRow>
-      )}
-    </TableBody>
-  </Table>
-);
+            );
+          } else {
+            // Este caso captura 'Pendente' && horarioJaPassou se a lógica acima falhar,
+            // ou qualquer outro status inesperado.
+            statusLabel = ag.status;
+            statusClass = "bg-gray-500 text-white";
+          }
+
+          return (
+            <TableRow key={ag.idAgendamento} className="hover:bg-gray-700 border-gray-700">
+              <TableCell>{ag.nomeCliente || (ag.usuario?.tipoUsuario?.nomeTipoUsuario !== 'Admin' ? ag.usuario?.nomeUsuario : 'Cliente Avulso')}</TableCell> 
+              <TableCell>{ag.profissional?.nomeUsuario || 'N/A'}</TableCell>
+              <TableCell>{dataAgendamento.toLocaleString('pt-BR', { dateStyle: 'short', timeStyle: 'short' })}</TableCell>
+              <TableCell>{ag.servico?.nomeServico || 'Serviço não encontrado'}</TableCell>
+              <TableCell>
+                <span className={`px-2 py-1 rounded-full text-xs font-medium ${statusClass}`}>
+                  {statusLabel}
+                </span>
+              </TableCell>
+              <TableCell className="text-right space-x-2">
+                {acoes || <span className="text-xs text-gray-500 italic">Nenhuma ação</span>}
+              </TableCell>
+            </TableRow>
+          );
+        }) : (
+          <TableRow>
+            <TableCell colSpan={6} className="text-center text-gray-400">Nenhum agendamento encontrado.</TableCell>
+          </TableRow>
+        )}
+      </TableBody>
+    </Table>
+  );
+};
 
 interface TabelaServicosProps {
   data: Servico[];
@@ -745,7 +960,6 @@ interface TabelaProdutosProps {
   onEdit: (p: Produto) => void;
   onDelete: (id: number) => void;
 }
-// (Tabela de Produtos do CÓDIGO 1 - Lógica Avançada)
 const TabelaProdutos: React.FC<TabelaProdutosProps> = ({ data, onEdit, onDelete }) => (
   <Table>
     <TableHeader>
@@ -759,7 +973,7 @@ const TabelaProdutos: React.FC<TabelaProdutosProps> = ({ data, onEdit, onDelete 
     <TableBody>
       {data.length > 0 ? data.map((p) => (
         <TableRow key={p.idProduto} className="hover:bg-gray-700 border-gray-700">
-          <TableCell>{p.nomeProduto}</TableCell>
+          <TableCell>{p.nomeProduto}</TableCell> 
           <TableCell>R$ {p.preco.toFixed(2)}</TableCell>
           <TableCell>{p.estoque}</TableCell>
           <TableCell className="text-right space-x-2">
@@ -794,9 +1008,8 @@ const TabelaClientes: React.FC<TabelaClientesProps> = ({ data, onDelete }) => (
     </TableHeader>
     <TableBody>
       {data.length > 0 ? data.map((c) => (
-        // Usa idUsuario (Lógica 1)
         <TableRow key={c.idUsuario} className="hover:bg-gray-700 border-gray-700"> 
-          <TableCell>{c.nomeUsuario}</TableCell>
+          <TableCell>{c.nomeUsuario}</TableCell> 
           <TableCell>{c.email}</TableCell>
           <TableCell>{c.telefone}</TableCell>
           <TableCell className="text-right">
@@ -812,10 +1025,55 @@ const TabelaClientes: React.FC<TabelaClientesProps> = ({ data, onDelete }) => (
   </Table>
 );
 
-// --- Componentes de Dialog ---
-// (Estes são os Dialogs do CÓDIGO 1 - Lógica Avançada)
+interface TabelaProfissionaisProps {
+  data: Usuario[];
+  onEdit: (p: Usuario) => void;
+  onDelete: (id: number) => void;
+}
+const TabelaProfissionais: React.FC<TabelaProfissionaisProps> = ({ data, onEdit, onDelete }) => (
+  <Table>
+    <TableHeader>
+      <TableRow className="hover:bg-gray-700 border-gray-700">
+        <TableHead className="text-white">Foto</TableHead>
+        <TableHead className="text-white">Nome</TableHead>
+        <TableHead className="text-white">Email</TableHead>
+        <TableHead className="text-white">Telefone</TableHead>
+        <TableHead className="text-right text-white">Ações</TableHead>
+      </TableRow>
+    </TableHeader>
+    <TableBody>
+      {data.length > 0 ? data.map((p) => (
+        <TableRow key={p.idUsuario} className="hover:bg-gray-700 border-gray-700"> 
+          <TableCell>
+            <img 
+              src={p.fotoUrl || 'https://placehold.co/40x40/333/FFF?text=Foto'} 
+              alt={p.nomeUsuario} 
+              className="w-10 h-10 rounded-full object-cover border-2 border-gray-600"
+              onError={(e) => (e.currentTarget.src = 'https://placehold.co/40x40/333/FFF?text=Erro')}
+            />
+          </TableCell>
+          <TableCell>{p.nomeUsuario}</TableCell> 
+          <TableCell>{p.email}</TableCell>
+          <TableCell>{p.telefone}</TableCell>
+          <TableCell className="text-right space-x-2">
+             <Button variant="outline" size="icon" onClick={() => onEdit(p)} className="text-yellow-400 border-yellow-400 hover:bg-yellow-400 hover:text-black" title="Editar Profissional">
+              <Edit className="h-4 w-4" />
+            </Button>
+            <BotaoExcluir onConfirm={() => onDelete(p.idUsuario)} /> 
+          </TableCell>
+        </TableRow>
+      )) : (
+        <TableRow>
+          <TableCell colSpan={5} className="text-center text-gray-400">Nenhum profissional encontrado.</TableCell>
+        </TableRow>
+      )}
+    </TableBody>
+  </Table>
+);
 
-// Botão Excluir com confirmação
+
+// --- Componentes de Dialog ---
+
 const BotaoExcluir: React.FC<{ onConfirm: () => void }> = ({ onConfirm }) => (
   <AlertDialog>
     <AlertDialogTrigger asChild>
@@ -837,8 +1095,6 @@ const BotaoExcluir: React.FC<{ onConfirm: () => void }> = ({ onConfirm }) => (
     </AlertDialogContent>
   </AlertDialog>
 );
-
-// --- Dialogs de Formulário (com controle de estado interno) ---
 
 interface ServicoDialogProps {
   open: boolean;
@@ -911,7 +1167,6 @@ interface ProdutoDialogProps {
   onSave: (data: Partial<Produto>) => void;
   produto: Partial<Produto> | null;
 }
-// (Formulário de Produto do CÓDIGO 1 - Lógica Avançada)
 const ProdutoDialog: React.FC<ProdutoDialogProps> = ({ open, onOpenChange, onSave, produto }) => {
   const [formData, setFormData] = useState<Partial<Produto>>({ 
     idProduto: undefined, 
@@ -966,7 +1221,6 @@ const ProdutoDialog: React.FC<ProdutoDialogProps> = ({ open, onOpenChange, onSav
               <Label htmlFor="nome-produto" className="text-right">Nome</Label>
               <Input id="nome-produto" name="nomeProduto" value={formData.nomeProduto} onChange={handleChange} className="col-span-3 bg-gray-700 border-gray-600" required />
             </div>
-            
             <div className="grid grid-cols-4 items-center gap-4">
               <Label htmlFor="descricao-produto" className="text-right">Descrição</Label>
               <textarea 
@@ -978,7 +1232,6 @@ const ProdutoDialog: React.FC<ProdutoDialogProps> = ({ open, onOpenChange, onSav
                 required 
               />
             </div>
-            
             <div className="grid grid-cols-4 items-center gap-4">
               <Label htmlFor="preco-produto" className="text-right">Preço (R$)</Label>
               <Input id="preco-produto" name="preco" type="number" step="0.01" value={formData.preco} onChange={handleChange} className="col-span-3 bg-gray-700 border-gray-600" required min="0"/>
@@ -987,7 +1240,6 @@ const ProdutoDialog: React.FC<ProdutoDialogProps> = ({ open, onOpenChange, onSav
               <Label htmlFor="stock-produto" className="text-right">Estoque</Label>
               <Input id="stock-produto" name="estoque" type="number" value={formData.estoque} onChange={handleChange} className="col-span-3 bg-gray-700 border-gray-600" required min="0"/>
             </div>
-            
             <div className="grid grid-cols-4 items-center gap-4">
               <Label htmlFor="imagem-produto" className="text-right">URL da Imagem</Label>
               <Input id="imagem-produto" name="imgUrl" value={formData.imgUrl} onChange={handleChange} className="col-span-3 bg-gray-700 border-gray-600" required placeholder="https://..."/>
@@ -1005,5 +1257,118 @@ const ProdutoDialog: React.FC<ProdutoDialogProps> = ({ open, onOpenChange, onSav
   );
 };
 
-export default Dashboard;
+interface ProfissionalDialogProps {
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+  onSave: (data: Partial<Usuario>) => void;
+  profissional: Partial<Usuario> | null;
+}
+const ProfissionalDialog: React.FC<ProfissionalDialogProps> = ({ open, onOpenChange, onSave, profissional }) => {
+  
+  const [formData, setFormData] = useState<Partial<Usuario>>({
+    nomeUsuario: '',
+    email: '',
+    senha: '',
+    cpf: '',
+    telefone: '',
+    fotoUrl: ''
+  });
 
+  useEffect(() => {
+    if (open) {
+      if (profissional) {
+        setFormData({...profissional, senha: ''}); 
+      } else {
+        setFormData({
+          nomeUsuario: '',
+          email: '',
+          senha: '',
+          cpf: '',
+          telefone: '',
+          fotoUrl: ''
+        });
+      }
+    }
+  }, [profissional, open]);
+
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const { name, value } = e.target;
+    setFormData(prev => ({ ...prev, [name]: value }));
+  };
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    
+    if (profissional?.idUsuario && !formData.senha) {
+      const { senha, ...dataSemSenha } = formData;
+      onSave(dataSemSenha);
+    } else {
+      onSave(formData);
+    }
+  };
+
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="bg-gray-800 border-gray-700 text-white">
+        <form onSubmit={handleSubmit}>
+          <DialogHeader>
+            <DialogTitle className="text-yellow-400">
+              {profissional?.idUsuario ? 'Editar Profissional' : 'Adicionar Novo Profissional'}
+            </DialogTitle>
+          </DialogHeader>
+          <div className="grid gap-4 py-4">
+            
+            <div className="grid grid-cols-4 items-center gap-4">
+              <Label htmlFor="nomeUsuario" className="text-right">Nome</Label>
+              <Input id="nomeUsuario" name="nomeUsuario" value={formData.nomeUsuario} onChange={handleChange} className="col-span-3 bg-gray-700 border-gray-600" required />
+            </div>
+
+            <div className="grid grid-cols-4 items-center gap-4">
+              <Label htmlFor="email" className="text-right">Email</Label>
+              <Input id="email" name="email" type="email" value={formData.email} onChange={handleChange} className="col-span-3 bg-gray-700 border-gray-600" required />
+            </div>
+            
+            <div className="grid grid-cols-4 items-center gap-4">
+              <Label htmlFor="senha" className="text-right">Senha</Label>
+              <Input 
+                id="senha" 
+                name="senha" 
+                type="password" 
+                value={formData.senha} 
+                onChange={handleChange} 
+                className="col-span-3 bg-gray-700 border-gray-600"
+                placeholder={profissional?.idUsuario ? 'Deixe em branco para não alterar' : 'Senha obrigatória'}
+                required={!profissional?.idUsuario} 
+              />
+            </div>
+
+            <div className="grid grid-cols-4 items-center gap-4">
+              <Label htmlFor="cpf" className="text-right">CPF</Label>
+              <Input id="cpf" name="cpf" value={formData.cpf} onChange={handleChange} className="col-span-3 bg-gray-700 border-gray-600" required />
+            </div>
+
+            <div className="grid grid-cols-4 items-center gap-4">
+              <Label htmlFor="telefone" className="text-right">Telefone</Label>
+              <Input id="telefone" name="telefone" value={formData.telefone} onChange={handleChange} className="col-span-3 bg-gray-700 border-gray-600" required />
+            </div>
+
+            <div className="grid grid-cols-4 items-center gap-4">
+              <Label htmlFor="fotoUrl" className="text-right">URL da Foto</Label>
+              <Input id="fotoUrl" name="fotoUrl" value={formData.fotoUrl} onChange={handleChange} className="col-span-3 bg-gray-700 border-gray-600" required />
+            </div>
+
+          </div>
+          <DialogFooter>
+            <DialogClose asChild>
+              <Button type="button" variant="outline" className="bg-gray-700 hover:bg-gray-600 border-0">Cancelar</Button>
+            </DialogClose>
+            <Button type="submit" className="bg-yellow-400 text-black hover:bg-yellow-300">Salvar</Button>
+          </DialogFooter>
+        </form>
+      </DialogContent>
+    </Dialog>
+  );
+};
+
+
+export default Dashboard;

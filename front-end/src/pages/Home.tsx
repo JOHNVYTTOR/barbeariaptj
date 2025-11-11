@@ -112,7 +112,7 @@ const Home = () => {
               <p className="text-primary font-bold">12/02/2020</p>
             </div>
             <div className="bg-white rounded-2xl shadow-lg p-6 text-center">
-              <img src="/certificados/likebarber.png" alt="LikeBarber School" className="mx-auto mb-4 h-16" />
+              <img src="https://upload.wikimedia.org/wikipedia/commons/thumb/8/86/Senac_logo.svg/1200px-Senac_logo.svg.png" alt="LikeBarber School" className="mx-auto mb-4 h-16" />
               <h3 className="font-semibold text-lg">LikeBarber School</h3>
               <p className="text-gray-600">Data de emissão:</p>
               <p className="text-primary font-bold">18/07/2022</p>
