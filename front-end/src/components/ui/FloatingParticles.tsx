@@ -1,6 +1,5 @@
 import { useEffect, useState } from "react";
 import { motion } from "framer-motion";
-import tesouraImg from "@/assets/TesouraParticula.png"; 
 
 interface Particle {
   id: number;
@@ -69,8 +68,6 @@ export const FloatingParticles = () => {
           // ✂️ partículas de tesoura PNG
           <motion.img
             key={particle.id}
-            src={tesouraImg}
-            alt="Tesoura dourada"
             className="absolute"
             style={{
               left: `${particle.x}%`,

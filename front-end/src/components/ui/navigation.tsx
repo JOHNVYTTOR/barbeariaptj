@@ -1,15 +1,19 @@
 import { useState, useEffect } from "react";
 import { Link, useLocation } from "react-router-dom";
 import { Button } from "./button";
-import { Menu, X, User } from "lucide-react"; // <-- 1. Importa Ícone do Carrinho
-import logoImage from "../../assets/logo.png"; // <-- Caminho corrigido
-import { useAuth } from "../../hooks/useAuth"; // <-- Caminho corrigido
+// 1. IMPORTA O ÍCONE DO DASHBOARD
+import { Menu, X, User, LayoutDashboard } from "lucide-react"; 
+import logoImage from "../../assets/logo.png"; 
+import { useAuth } from "../../hooks/useAuth";  
 
 export const Navigation = () => {
-  const { user } = useAuth();
+  const { user } = useAuth(); 
   const [isOpen, setIsOpen] = useState(false);
   const [isScrolled, setIsScrolled] = useState(false);
   const location = useLocation();
+
+  // 2. CRIA A VARIÁVEL 'isAdmin' (PELO AMOR DE DEUS)
+  const isAdmin = user?.tipoUsuario?.nomeTipoUsuario === "Admin";
 
   const navItems = [
     { name: "Inicio", href: "/" },
@@ -31,6 +35,7 @@ export const Navigation = () => {
     window.addEventListener("scroll", handleScroll);
     return () => window.removeEventListener("scroll", handleScroll);
   }, []);
+
 
   return (
     <nav
@@ -87,8 +92,22 @@ export const Navigation = () => {
             ))}
           </div>
 
-          {/* Lado direito (perfil, carrinho e login) */}
+          {/* Lado direito (perfil e login) */}
           <div className="flex items-center flex-1 justify-end space-x-3">
+            
+            {/* --- 3. BOTÃO DASHBOARD (DESKTOP) --- */}
+            {/* SÓ APARECE SE FOR ADMIN */}
+            {isAdmin && (
+              <Link
+                to="/dashboard"
+                className="hidden md:flex text-white hover:text-primary transition-colors"
+                title="Dashboard Admin"
+              >
+                <LayoutDashboard size={24} />
+              </Link>
+            )}
+            {/* --- Fim da alteração 3 --- */}
+
             {/* Ícone de perfil — aparece SOMENTE se estiver logado */}
             {user && (
               <Link
@@ -148,6 +167,7 @@ export const Navigation = () => {
               </Link>
             ))}
 
+
             {/* Ícone de perfil — só aparece se estiver logado */}
             {user && (
               <Link
@@ -158,6 +178,20 @@ export const Navigation = () => {
                 <User size={20} /> Meu Perfil
               </Link>
             )}
+
+            {/* --- 4. BOTÃO DASHBOARD (MOBILE) --- */}
+            {/* SÓ APARECE SE FOR ADMIN */}
+            {isAdmin && (
+              <Link
+                to="/dashboard"
+                className="flex items-center justify-center gap-2 text-white hover:text-primary mt-2"
+                onClick={() => setIsOpen(false)}
+              >
+                <LayoutDashboard size={20} /> Dashboard
+              </Link>
+            )}
+            {/* --- Fim da alteração 4 --- */}
+
 
             {/* Botão Entrar Mobile — só aparece se NÃO estiver logado */}
             {!user && (
