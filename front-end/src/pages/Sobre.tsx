@@ -7,13 +7,11 @@ import gabrielPng from "@/assets/gabriel.png";
 import bb01 from "@/assets/bb_01.png";
 import bb02 from "@/assets/bb_02.png";
 import bb03 from "@/assets/bb_03.png";
-import fotoCorte from "@/assets/fotoCorte.jpg";
 
 export default function Sobre() {
   const galleryImages = [
     { src: bb01, alt: "Interior da barbearia 1" },
     { src: bb02, alt: "Interior da barbearia 2" },
-    { src: fotoCorte, alt: "Corte de cabelo detalhado" },
   ];
 
   return (

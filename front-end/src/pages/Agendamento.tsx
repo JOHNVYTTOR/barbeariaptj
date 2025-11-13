@@ -4,12 +4,13 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Calendar } from "@/components/ui/calendar";
 import { Label } from "@/components/ui/label";
-import { Input } from "@/components/ui/input";
+// import { Input } from "@/components/ui/input"; // Removido (não precisamos mais do input de nome)
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"; 
 import { ChevronLeft, ChevronRight, Check } from "lucide-react";
 import { toast } from "sonner";
-import { api } from '../api.ts'; // Corrigido: Voltando para o caminho relativo
-import { format } from 'date-fns'; // Importar 'format'
+import { api } from '../api.ts'; 
+import { format } from 'date-fns'; 
+import { useAuth } from '../hooks/useAuth'; // 1. IMPORTAR AUTENTICAÇÃO
 
 // --- Interfaces ---
 
@@ -32,14 +33,11 @@ interface Usuario {
   };
 }
 
-// ===== NOVA INTERFACE DE AGENDAMENTO (para checagem) =====
-// Precisa ser simples para bater com a lista de agendamentos
 interface AgendamentoSimples {
   idAgendamento: number;
   dataHora: string; 
   status: 'Pendente' | 'Concluído' | 'Cancelado';
 }
-// =======================================================
 
 interface HorarioDisponivelAPI {
   idHorarioDisponivel: number;
@@ -54,7 +52,6 @@ interface HorarioParaLista {
   horarioString: string;
   horarioISO: string;
   isPast: boolean; 
-  // Adicionado para lógica de bloqueio
   estaAgendado: boolean; 
   disponivel: boolean;
 }
@@ -168,7 +165,7 @@ const generateDailyTemplate = (selectedDate: Date): HorarioDisponivelAPI[] => {
     
     while (h < afternoonEndH || (h === afternoonEndH && m <= afternoonEndM)) {
       const nextSlot = incrementTime(h, m);
-      if (nextSlot.h > afternoonEndH || (nextSlot.h === afternoonEndH && nextSlot.m > morningEndM)) {
+      if (nextSlot.h > afternoonEndH || (nextSlot.h === afternoonEndH && nextSlot.m > afternoonEndM)) {
           if (h === afternoonEndH && m === afternoonEndM) {
             template.push(createEntry(h, m)); 
           }
@@ -189,7 +186,8 @@ const generateDailyTemplate = (selectedDate: Date): HorarioDisponivelAPI[] => {
 
 const Agendamento = () => {
   const navigate = useNavigate(); 
-  
+  const { user } = useAuth(); // 2. PEGAR O USUÁRIO LOGADO
+
   // --- Estados de Controle ---
   const [step, setStep] = useState(1);
   const [selectedService, setSelectedService] = useState<number | null>(null);
@@ -197,7 +195,7 @@ const Agendamento = () => {
   const [selectedDate, setSelectedDate] = useState<Date | undefined>(new Date());
   
   const [selectedTime, setSelectedTime] = useState<HorarioSelecionado>(null); 
-  const [nomeUsuario, setNomeUsuario] = useState(""); 
+  // const [nomeUsuario, setNomeUsuario] = useState(""); // 3. REMOVIDO (Não é mais necessário)
 
   // --- Estados de Dados (Serviços) ---
   const [apiServices, setApiServices] = useState<Servico[]>([]);
@@ -399,13 +397,22 @@ const Agendamento = () => {
   const totalPrice = selectedServiceData ? getNumericPrice(selectedServiceData.preco) : 0;
 
 
-  // handleConfirm (com lógica do WhatsApp)
+  // ===== 4. ATUALIZADO: handleConfirm =====
   const handleConfirm = async () => {
-    if (!nomeUsuario) {
-      toast.error("Campo obrigatório", { description: "Por favor, informe seu nome para o agendamento." });
+    
+    // 4a. Verifica se o usuário está logado ANTES de tudo
+    if (!user) {
+      toast.error("Login Obrigatório", {
+        description: "Você precisa estar logado para confirmar um agendamento.",
+      });
+      navigate('/login'); // Envia para a tela de login
       return;
     }
     
+    // 4b. Remove a verificação de 'nomeUsuario'
+    // if (!nomeUsuario) { ... } // REMOVIDO
+
+    // 4c. A verificação de dados principais continua
     if (!selectedTime || !selectedServiceData || !selectedProfissional) {
         toast.error("Erro interno", { description: "Informações de horário, serviço ou profissional perdidas. Tente novamente." });
       return;
@@ -413,18 +420,20 @@ const Agendamento = () => {
 
     setIsConfirming(true); 
 
+    // 4d. Payload atualizado para usar o 'user' logado
     const payloadAgendamento = {
-      usuario: null, 
+      usuario: { idUsuario: user.idUsuario }, // Usa o ID do usuário logado
       servico: { idServico: selectedServiceData.idServico },
       profissional: { idUsuario: selectedProfissional },
-      dataHora: selectedTime.horarioISO, // Envia o ISO local (ex: ...T09:00:00)
-      nomeCliente: nomeUsuario,
+      dataHora: selectedTime.horarioISO,
+      nomeCliente: user.nomeUsuario, // Usa o NOME do usuário logado
       status: 'Pendente' 
     };
 
     try {
       await api.post('/agendamentos', payloadAgendamento);
 
+      // Lógica para ATUALIZAR O HORÁRIO (colocada aqui)
       if (selectedTime.id > 0) {
         try {
           await api.put(`/horarios/${selectedTime.id}/disponibilidade`, null, { 
@@ -434,6 +443,7 @@ const Agendamento = () => {
           console.error("Falha ao atualizar disponibilidade do horário:", error);
         }
       }
+      // ===== FIM DA CORREÇÃO DE BUG (bloco 'try' interno estava fechando o 'try' principal) =====
 
       toast.success("Agendamento confirmado!", { description: "Seu horário foi agendado com sucesso." });
 
@@ -447,9 +457,10 @@ const Agendamento = () => {
         const dataString = selectedDate ? formatDate(selectedDate) : "Data";
         const horaString = selectedTime.horarioString;
 
-        const mensagem = `Olá! Acabei de confirmar meu agendamento:\n\n*Cliente:* ${nomeUsuario}\n*Serviço:* ${servicoNome}\n*Profissional:* ${profNome}\n*Data:* ${dataString}\n*Horário:* ${horaString}\n\nObrigado!`;
+        // 4e. Mensagem do WhatsApp usa o 'user' logado
+        const mensagem = `Olá! Acabei de confirmar meu agendamento:\n\n*Cliente:* ${user.nomeUsuario}\n*Serviço:* ${servicoNome}\n*Profissional:* ${profNome}\n*Data:* ${dataString}\n*Horário:* ${horaString}\n\nObrigado!`;
         const urlWhatsApp = `https://wa.me/${numeroBarbearia}?text=${encodeURIComponent(mensagem)}`;
-        window.open(urlWhatsApp, '_blank');
+        window.open(urlWhatsApp, '_blank'); // <-- Adicionado o window.open que estava faltando
       } catch (waError) {
         console.error("Erro ao tentar abrir WhatsApp:", waError);
       }
@@ -460,7 +471,7 @@ const Agendamento = () => {
       setSelectedProfissional(null); 
       setSelectedDate(new Date());
       setSelectedTime(null);
-      setNomeUsuario("");
+      // setNomeUsuario(""); // 4f. REMOVIDO
       navigate('/'); 
     } catch (error: any) {
       console.error("Erro ao confirmar agendamento:", error);
@@ -608,25 +619,36 @@ const Agendamento = () => {
   );
   // ========================================================
 
-  // renderStepFour (Resumo - Sem mudança)
+  // ===== 5. ATUALIZADO: renderStepFour (Resumo) =====
+  // (Removida a definição duplicada que estava no seu código)
   const renderStepFour = () => {
     const profSelecionado = profissionais.find(p => p.idUsuario === selectedProfissional);
+    
+    // Se o usuário não estiver logado (embora o 'handleConfirm' vá bloquear),
+    // é bom ter uma verificação aqui.
+    if (!user) {
+      return (
+        <div className="text-center p-8 text-yellow-400">
+          <p>Carregando dados do usuário...</p>
+          <p>Se você não for redirecionado, por favor, faça o login.</p>
+        </div>
+      )
+    }
+    
     return (
       <div className="space-y-6">
-        <div className="space-y-2">
+        
+        {/* 5a. REMOVIDO o Input de "Seu Nome" */}
+        {/* <div className="space-y-2">
           <Label htmlFor="nomeUsuario">Seu Nome:</Label>
-          <Input
-            id="nomeUsuario"
-            type="text"
-            value={nomeUsuario}
-            onChange={(e) => setNomeUsuario(e.target.value)}
-            placeholder="Digite seu nome completo"
-            className="bg-gray-800 border-gray-700 text-gray-100 placeholder-gray-500"
-          />
-        </div>
+          <Input ... />
+        </div> */}
+
         <div className="bg-gray-800 border border-gray-700 p-6 rounded-lg">
           <h4 className="font-semibold mb-2 text-gray-100">Resumo do Agendamento</h4>
           <div className="space-y-1 text-sm text-gray-400">
+            {/* 5b. Resumo atualizado para usar o 'user' logado */}
+            <p><strong>Cliente:</strong> {user.nomeUsuario}</p> 
             <p><strong>Serviço:</strong> {selectedServiceData?.nomeServico || "Não selecionado"}</p>
             <p><strong>Valor Total:</strong> {formatCurrency(totalPrice)}</p>
             <p><strong>Profissional:</strong> {profSelecionado?.nomeUsuario || "Não selecionado"}</p>
@@ -640,6 +662,7 @@ const Agendamento = () => {
 
 
   // --- Renderização Principal (JSX) ---
+
   return (
     <div className="min-h-screen bg-gray-900 text-gray-100 transition-colors duration-300">
       <div className="max-w-4xl mx-auto px-4 py-12">

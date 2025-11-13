@@ -100,19 +100,19 @@ const Home = () => {
 
           <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-8">
             <div className="bg-white rounded-2xl shadow-lg p-6 text-center">
-              <img src="https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcS53QtmSBcetC1JRFNfI_IJJKfWy9fpy093QQ&s" alt="Up Escola de Beleza" className="mx-auto mb-4 h-16" />
+              <img src="https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcS53QtmSBcetC1JRFNfI_IJJKfWy9fpy093QQ&s" alt="Up Escola de Beleza" className="mx-auto mb-4 h-20" />
               <h3 className="font-semibold text-lg">Up Escola de Beleza</h3>
               <p className="text-gray-600">Data de emissão:</p>
               <p className="text-primary font-bold">20/11/2019</p>
             </div>
             <div className="bg-white rounded-2xl shadow-lg p-6 text-center">
-              <img src="https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcQe7FG91MSW-tbBOFw-9B1-6vkLrUNhAlfUFw&s" alt="ProHair International" className="mx-auto mb-4 h-16" />
+              <img src="https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcQe7FG91MSW-tbBOFw-9B1-6vkLrUNhAlfUFw&s" alt="ProHair International" className="mx-auto mb-4 h-20" />
               <h3 className="font-semibold text-lg">ProHair International</h3>
               <p className="text-gray-600">Data de emissão:</p>
               <p className="text-primary font-bold">12/02/2020</p>
             </div>
             <div className="bg-white rounded-2xl shadow-lg p-6 text-center">
-              <img src="https://upload.wikimedia.org/wikipedia/commons/thumb/8/86/Senac_logo.svg/1200px-Senac_logo.svg.png" alt="LikeBarber School" className="mx-auto mb-4 h-16" />
+              <img src="https://upload.wikimedia.org/wikipedia/commons/thumb/8/86/Senac_logo.svg/1200px-Senac_logo.svg.png" alt="LikeBarber School" className="mx-auto mb-4 h-30" />
               <h3 className="font-semibold text-lg">LikeBarber School</h3>
               <p className="text-gray-600">Data de emissão:</p>
               <p className="text-primary font-bold">18/07/2022</p>
