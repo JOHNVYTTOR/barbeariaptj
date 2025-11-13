@@ -18,4 +18,9 @@ public interface AgendamentoRepository extends JpaRepository<Agendamento, Long> 
 
     // 👇 ADICIONE ESTE MÉTODO (para encontrar todos os agendamentos dele)
     List<Agendamento> findAllByProfissionalIdUsuario(Long idUsuario);	
+    
+ boolean existsByUsuarioIdUsuarioAndStatus(Long idUsuario, String status);
+    
+    // 👇 ADICIONE ESTE MÉTODO (para encontrar todos os agendamentos dele como cliente)
+    List<Agendamento> findAllByUsuarioIdUsuario(Long idUsuario);
 }

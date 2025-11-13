@@ -72,27 +72,33 @@ public class UsuarioService {
 			throw new RuntimeException("Usuário não encontrado com ID: " + id);
 		}
 
-        // VERIFICA SE O USUÁRIO (PROFISSIONAL) TEM AGENDAMENTOS PENDENTES
-		boolean hasPendingAgendamentos = agendamentoRepository.existsByProfissionalIdUsuarioAndStatus(id, "Pendente");
+        // 3. VERIFICA SE O USUÁRIO TEM AGENDAMENTOS PENDENTES (COMO PROFISSIONAL OU CLIENTE)
+		boolean hasPendingAsProfissional = agendamentoRepository.existsByProfissionalIdUsuarioAndStatus(id, "Pendente");
+		boolean hasPendingAsCliente = agendamentoRepository.existsByUsuarioIdUsuarioAndStatus(id, "Pendente");
 
-		if (hasPendingAgendamentos) {
+		if (hasPendingAsProfissional || hasPendingAsCliente) {
 			// Se tiver pendente, bloqueia a exclusão
-			throw new DataIntegrityViolationException("Não é possível excluir. Este profissional ainda possui agendamentos Pendentes.");
+			throw new DataIntegrityViolationException("Não é possível excluir. Este usuário (como cliente ou profissional) ainda possui agendamentos Pendentes.");
 		}
 
-        // Se não tem pendente, precisamos "desvincular" os agendamentos concluídos/cancelados
+        // 4. Se não tem pendente, precisamos "desvincular" os agendamentos concluídos/cancelados
         // ANTES de excluir o usuário, para evitar o erro do banco de dados.
 
-        // 3. Encontra todos os agendamentos (concluídos/cancelados) ligados a ele
-        List<Agendamento> agendamentosDoProfissional = agendamentoRepository.findAllByProfissionalIdUsuario(id);
-
-        // 4. "Desvincula" o profissional de cada agendamento
-        for (Agendamento ag : agendamentosDoProfissional) {
+        // 4a. Desvincula onde ele é o PROFISSIONAL
+        List<Agendamento> agendamentosComoProfissional = agendamentoRepository.findAllByProfissionalIdUsuario(id);
+        for (Agendamento ag : agendamentosComoProfissional) {
             ag.setProfissional(null); // Define o profissional_id como NULL
             agendamentoRepository.save(ag); // Salva a alteração
         }
 
-        // 5. AGORA que não há mais vínculos, exclui o usuário (profissional)
+        // 4b. Desvincula onde ele é o CLIENTE (O que estava faltando)
+        List<Agendamento> agendamentosComoCliente = agendamentoRepository.findAllByUsuarioIdUsuario(id);
+        for (Agendamento ag : agendamentosComoCliente) {
+            ag.setUsuario(null); // Define o usuario_id como NULL
+            agendamentoRepository.save(ag); // Salva a alteração
+        }
+
+        // 5. AGORA que não há mais vínculos, exclui o usuário
 		usuarioRepository.deleteById(id);
 	}
 	
