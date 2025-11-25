@@ -21,11 +21,11 @@ import { Label } from '@/components/ui/label';
 import { Calendar } from '@/components/ui/calendar';
 import { Switch } from '@/components/ui/switch';
 import { toast } from "sonner";
-import { api } from '../api.ts'; // Corrigido: Usando o caminho relativo
+import { api } from '@/api'; // 1. CORRIGIDO: Usando @/api (padrão de outros arquivos)
 import { format } from 'date-fns'; 
 import { ptBR } from 'date-fns/locale'; 
 
-// ... (Interfaces, generateDailyTemplate, etc. - Sem mudanças) ...
+// --- Interfaces ---
 
 interface TipoUsuario {
   id: number;
@@ -36,11 +36,12 @@ interface Usuario {
   idUsuario: number;
   nomeUsuario: string; 
   email: string;
-  senha: string;
+  senha?: string; // Senha é opcional ao buscar/editar
   cpf: string;
   telefone: string;
   fotoUrl: string; 
   tipoUsuario: TipoUsuario;
+  ativo: boolean; // <-- CAMPO ADICIONADO
 }
 
 interface Servico {
@@ -66,7 +67,7 @@ interface Agendamento {
   usuario: Usuario; 
   servico: Servico;
   nomeCliente?: string; 
-  profissional?: Usuario; // Campo para o profissional
+  profissional?: Usuario; 
 }
 
 interface HorarioDisponivel {
@@ -78,6 +79,7 @@ interface HorarioDisponivel {
 }
 
 // --- FUNÇÃO GERADORA DE TEMPLATE (Horários baseados na foto) ---
+// (Função completa restaurada)
 const generateDailyTemplate = (selectedDate: Date): HorarioDisponivel[] => {
   const template: HorarioDisponivel[] = [];
   const date = new Date(selectedDate);
@@ -183,7 +185,6 @@ const generateDailyTemplate = (selectedDate: Date): HorarioDisponivel[] => {
 
 // --- Componente Principal do Dashboard ---
 const Dashboard = () => {
-// ... (Estados, fetch functions, etc. - Sem mudanças) ...
   const [agendamentos, setAgendamentos] = useState<Agendamento[]>([]);
   const [servicos, setServicos] = useState<Servico[]>([]);
   const [produtos, setProdutos] = useState<Produto[]>([]);
@@ -309,9 +310,11 @@ const Dashboard = () => {
         const horarioIso = horarioDate.toISOString();
         const estaAgendado = horariosAgendados.has(horarioIso);
 
+        const disponibilidadeFinal = estaAgendado ? false : h.disponivel;
+
         return {
           ...h,
-          disponivel: estaAgendado ? false : h.disponivel, 
+          disponivel: disponibilidadeFinal, 
           isBooked: estaAgendado,
           data: dateOnly 
         };
@@ -356,24 +359,17 @@ const Dashboard = () => {
   // Agendamentos
   const handleUpdateAgendamentoStatus = async (agendamento: Agendamento, status: 'Concluído' | 'Cancelado') => {
     try {
-      // ===== CORREÇÃO AQUI =====
-      // Em vez de enviar o objeto 'agendamento' inteiro (que pode dar erro 500),
-      // enviamos um payload limpo, apenas com os IDs das relações.
-      // O back-end (AgendamentoService.java) já espera por isso.
       const payload = {
         idAgendamento: agendamento.idAgendamento,
         dataHora: agendamento.dataHora,
         nomeCliente: agendamento.nomeCliente,
-        status: status, // O novo status
-        
-        // Envia apenas os IDs das entidades relacionadas
+        status: status, 
         usuario: agendamento.usuario ? { idUsuario: agendamento.usuario.idUsuario } : null,
         servico: agendamento.servico ? { idServico: agendamento.servico.idServico } : null,
         profissional: agendamento.profissional ? { idUsuario: agendamento.profissional.idUsuario } : null
       };
       
       await api.put(`/agendamentos/${agendamento.idAgendamento}`, payload);
-      // ===== FIM DA CORREÇÃO =====
 
       toast.success(`Agendamento ${status === 'Concluído' ? 'concluído' : 'cancelado'}!`);
 
@@ -388,6 +384,8 @@ const Dashboard = () => {
       toast.error('Erro ao atualizar status do agendamento.');
     }
   };
+
+  // --- FUNÇÕES RESTAURADAS ---
 
   // Serviços
   const handleSaveServico = async (formData: Partial<Servico>) => {
@@ -458,6 +456,7 @@ const Dashboard = () => {
   };
 
   // Clientes
+  // (Esta função não é mais usada pela TabelaClientes, mas a mantemos)
   const handleDeleteCliente = async (idUsuario: number) => {
     try {
       await api.delete(`/usuarios/${idUsuario}`);
@@ -466,6 +465,46 @@ const Dashboard = () => {
     } catch (error) {
       console.error("Erro handleDeleteCliente:", error);
       toast.error('Erro ao excluir cliente. Verifique se ele não possui agendamentos.');
+    }
+  };
+  
+  // FUNÇÃO PARA BLOQUEAR/DESBLOQUEAR CLIENTE
+  const handleToggleClienteStatus = async (cliente: Usuario) => {
+    const novoStatus = !cliente.ativo; // Inverte o status
+    
+    // Atualiza o estado local (UI Otimista)
+    setClientes(prevClientes =>
+      prevClientes.map(c =>
+        c.idUsuario === cliente.idUsuario ? { ...c, ativo: novoStatus } : c
+      )
+    );
+
+    try {
+      // Prepara o payload COMPLETO (como o back-end espera)
+      const payload = {
+        ...cliente, // Envia todos os dados antigos
+        senha: '', // Envia senha vazia para não alterar
+        ativo: novoStatus, // Envia o novo status
+      };
+      
+      // Envia o PUT para o mesmo endpoint de update
+      await api.put(`/usuarios/${cliente.idUsuario}`, payload);
+      
+      toast.success(`Cliente ${novoStatus ? 'desbloqueado' : 'bloqueado'} com sucesso!`);
+      
+      // Re-busca os clientes para garantir
+      fetchClientes();
+
+    } catch (error) {
+      console.error("Erro ao alterar status do cliente:", error);
+      toast.error('Erro ao alterar status.');
+      
+      // Reverte a mudança local em caso de erro
+      setClientes(prevClientes =>
+        prevClientes.map(c =>
+          c.idUsuario === cliente.idUsuario ? { ...c, ativo: !novoStatus } : c
+        )
+      );
     }
   };
   
@@ -486,9 +525,15 @@ const Dashboard = () => {
             cpf: formData.cpf,
             telefone: formData.telefone,
             fotoUrl: formData.fotoUrl,
-            tipoUsuario: formData.tipoUsuario 
+            tipoUsuario: formData.tipoUsuario,
+            ativo: formData.ativo // Preserva o status 'ativo'
         };
-        await api.put(`/usuarios/${formData.idUsuario}`, payload); // Assumindo que seu back-end aceita PUT em /usuarios
+        // Se a senha foi preenchida, adiciona ao payload
+        if (formData.senha) {
+          (payload as any).senha = formData.senha;
+        }
+
+        await api.put(`/usuarios/${formData.idUsuario}`, payload); 
         toast.success('Profissional atualizado com sucesso!');
       } else {
         // Criar (POST) - Usando /usuarios/registerAdmin
@@ -499,6 +544,7 @@ const Dashboard = () => {
             cpf: formData.cpf,
             telefone: formData.telefone,
             fotoUrl: formData.fotoUrl
+            // 'ativo' será 'true' por padrão no DB
         };
         await api.post('/usuarios/registerAdmin', payload); 
         toast.success('Profissional criado com sucesso!');
@@ -518,52 +564,120 @@ const Dashboard = () => {
       fetchProfissionais(); 
     } catch (error) {
       console.error("Erro handleDeleteProfissional:", error);
-      // ATUALIZADO: Mensagem de erro mais específica
       toast.error('Erro ao excluir profissional.', {
         description: 'Verifique se este profissional não possui agendamentos PENDENTES.'
       });
     }
   };
 
+  // --- FIM DAS FUNÇÕES RESTAURADAS ---
+
 
   // Horários
+  // 2. ADICIONADA A FUNÇÃO QUE FALTAVA
   const handleToggleHorario = (index: number) => {
     const novosHorarios = [...horarios];
+    // Inverte o valor 'disponivel' do item específico
     novosHorarios[index].disponivel = !novosHorarios[index].disponivel;
     setHorarios(novosHorarios);
   };
+  // ===== FIM DA ADIÇÃO =====
 
   const handleSalvarHorarios = async () => {
     if (!dataSelecionada) return;
 
     const dateOnly = new Date(dataSelecionada.getFullYear(), dataSelecionada.getMonth(), dataSelecionada.getDate());
 
-    const promises = horarios.map(h => {
-      const horarioDate = new Date(h.horarios);
-      horarioDate.setFullYear(dateOnly.getFullYear(), dateOnly.getMonth(), dateOnly.getDate());
-      const isoLocalString = format(horarioDate, "yyyy-MM-dd'T'HH:mm:ss");
+    const horariosParaCriar = horarios.filter(h => !h.idHorarioDisponivel || h.idHorarioDisponivel <= 0);
+    const horariosParaAtualizar = horarios.filter(h => h.idHorarioDisponivel && h.idHorarioDisponivel > 0);
 
-      if (h.idHorarioDisponivel) {
+    const putPromises = horariosParaAtualizar.map(h => {
         return api.put(`/horarios/${h.idHorarioDisponivel}/disponibilidade`, null, { 
           params: { disponivel: h.disponivel } 
         });
-      } else {
+    });
+    
+    const postPromises = horariosParaCriar.map(h => {
+        const horarioDate = new Date(h.horarios);
+        horarioDate.setFullYear(dateOnly.getFullYear(), dateOnly.getMonth(), dateOnly.getDate());
+        const isoLocalString = format(horarioDate, "yyyy-MM-dd'T'HH:mm:ss");
         return api.post('/horarios', { 
           horarios: isoLocalString, 
           disponivel: h.disponivel 
         });
-      }
     });
 
     try {
-      await Promise.all(promises);
+      if (putPromises.length > 0) {
+        await Promise.all(putPromises);
+      }
+      
+      if (postPromises.length > 0) {
+         await Promise.all(postPromises);
+      }
+      
       toast.success("Horários atualizados!");
-      fetchHorarios(dataSelecionada, agendamentos); 
-    } catch (error) {
+
+      // 3. CORREÇÃO "RACE CONDITION"
+      // Adicionando o fetchHorarios DE VOLTA, mas DEPOIS que o await
+      // (salvamento) terminou.
+      fetchHorarios(dataSelecionada, agendamentos);
+      
+    } catch (error: any) {
       console.error("Erro handleSalvarHorarios:", error);
-      toast.error("Erro ao salvar horários.");
-    }
+      
+      if ((error.response?.status === 404 || error.response?.status === 405) && putPromises.length > 0) {
+          toast.warning("Horários existentes foram atualizados.", {
+            description: "Não foi possível criar os horários do template (endpoint 'POST /horarios' não encontrado)."
+          });
+          // Adicionado aqui também
+          fetchHorarios(dataSelecionada, agendamentos); 
+      } else if (putPromises.length === 0 && postPromises.length > 0) {
+          toast.error("Erro ao tentar criar horários.", {
+            description: "Verifique se seu back-end possui o endpoint 'POST /horarios'."
+          });
+      } else {
+          toast.error("Erro ao salvar horários.");
+      }
+    } 
   };
+
+  // Função para Desabilitar Todos
+  const handleDisableAllHorarios = () => {
+    if (horarios.length === 0) {
+      toast.info("Nenhum horário para desabilitar.");
+      return;
+    }
+    
+    const horariosDesabilitados = horarios.map(h => ({
+      ...h,
+      disponivel: false 
+    }));
+    
+    setHorarios(horariosDesabilitados);
+    toast.success("Todos os horários foram desabilitados.", {
+      description: "Clique em 'Salvar Alterações' para confirmar."
+    });
+  };
+
+  // Função para Habilitar Todos
+  const handleEnableAllHorarios = () => {
+    if (horarios.length === 0) {
+      toast.info("Nenhum horário para habilitar.");
+      return;
+    }
+    
+    const horariosHabilitados = horarios.map(h => ({
+      ...h,
+      disponivel: h.isBooked ? false : true 
+    }));
+    
+    setHorarios(horariosHabilitados);
+    toast.success("Todos os horários foram habilitados.", {
+      description: "Clique em 'Salvar Alterações' para confirmar."
+    });
+  };
+
 
   // --- Handlers de UI (Abrir/Fechar Dialogs) ---
   const handleEditarServicoClick = (servico: Servico) => {
@@ -769,9 +883,32 @@ const Dashboard = () => {
                   )}
                 </div>
 
-                <Button onClick={handleSalvarHorarios} className="w-full mt-4 bg-green-500 text-white hover:bg-green-600">
-                  Salvar Alterações nos Horários
+                {/* Layout de botões Habilitar/Desabilitar/Salvar */}
+                <div className="flex flex-col sm:flex-row gap-2 w-full mt-4">
+                  <Button 
+                    onClick={handleEnableAllHorarios} 
+                    className="w-full bg-blue-600 text-white hover:bg-blue-700"
+                    variant="default"
+                  >
+                    Habilitar Dia Inteiro
+                  </Button>
+                  
+                  <Button 
+                    onClick={handleDisableAllHorarios} 
+                    className="w-full bg-red-600 text-white hover:bg-red-700"
+                    variant="destructive"
+                  >
+                    Desabilitar Dia Inteiro
+                  </Button>
+                </div>
+                
+                <Button 
+                  onClick={handleSalvarHorarios} 
+                  className="w-full bg-green-500 text-white hover:bg-green-600 mt-2"
+                >
+                  Salvar Alterações
                 </Button>
+                
               </div>
             </CardContent>
           </Card>
@@ -784,7 +921,8 @@ const Dashboard = () => {
               <CardTitle className="text-yellow-400">Gerenciar Clientes</CardTitle>
             </CardHeader>
             <CardContent className="overflow-x-auto">
-              <TabelaClientes data={clientes} onDelete={handleDeleteCliente} />
+              {/* Tabela de clientes COM o botão de bloquear */}
+              <TabelaClientes data={clientes} onToggleStatus={handleToggleClienteStatus} />
             </CardContent>
           </Card>
         </TabsContent>
@@ -886,8 +1024,6 @@ const TabelaAgendamentos: React.FC<TabelaAgendamentosProps> = ({ data, onUpdateS
               </>
             );
           } else {
-            // Este caso captura 'Pendente' && horarioJaPassou se a lógica acima falhar,
-            // ou qualquer outro status inesperado.
             statusLabel = ag.status;
             statusClass = "bg-gray-500 text-white";
           }
@@ -992,18 +1128,19 @@ const TabelaProdutos: React.FC<TabelaProdutosProps> = ({ data, onEdit, onDelete 
   </Table>
 );
 
+// Tabela de Clientes (COM o botão de bloquear)
 interface TabelaClientesProps {
   data: Usuario[];
-  onDelete: (id: number) => void;
+  onToggleStatus: (cliente: Usuario) => void;
 }
-const TabelaClientes: React.FC<TabelaClientesProps> = ({ data, onDelete }) => (
+const TabelaClientes: React.FC<TabelaClientesProps> = ({ data, onToggleStatus }) => (
   <Table>
     <TableHeader>
       <TableRow className="hover:bg-gray-700 border-gray-700">
         <TableHead className="text-white">Nome</TableHead>
         <TableHead className="text-white">Email</TableHead>
         <TableHead className="text-white">Telefone</TableHead>
-        <TableHead className="text-right text-white">Ações</TableHead>
+        <TableHead className="text-right text-white">Status (Ativo)</TableHead>
       </TableRow>
     </TableHeader>
     <TableBody>
@@ -1013,7 +1150,17 @@ const TabelaClientes: React.FC<TabelaClientesProps> = ({ data, onDelete }) => (
           <TableCell>{c.email}</TableCell>
           <TableCell>{c.telefone}</TableCell>
           <TableCell className="text-right">
-            <BotaoExcluir onConfirm={() => onDelete(c.idUsuario)} /> 
+            <div className="flex justify-end items-center space-x-2">
+              <Label htmlFor={`status-${c.idUsuario}`} className={c.ativo ? 'text-green-400' : 'text-red-400'}>
+                {c.ativo ? 'Ativo' : 'Bloqueado'}
+              </Label>
+              <Switch
+                id={`status-${c.idUsuario}`}
+                checked={c.ativo}
+                onCheckedChange={() => onToggleStatus(c)}
+                className="data-[state=checked]:bg-green-500 data-[state=unchecked]:bg-red-500"
+              />
+            </div>
           </TableCell>
         </TableRow>
       )) : (
@@ -1300,9 +1447,11 @@ const ProfissionalDialog: React.FC<ProfissionalDialogProps> = ({ open, onOpenCha
     e.preventDefault();
     
     if (profissional?.idUsuario && !formData.senha) {
+      // Se está editando E a senha está vazia, envia sem a senha
       const { senha, ...dataSemSenha } = formData;
       onSave(dataSemSenha);
     } else {
+      // Se está criando OU se está editando E preencheu a senha
       onSave(formData);
     }
   };

@@ -39,7 +39,7 @@ export default function Sobre() {
             </div>
 
             <div className="text-center md:text-left">
-              <h2 className="text-4xl font-bold mb-4">Conheça o Mestre</h2>
+              <h2 className="text-4xl font-bold mb-4">Conheça o Gabriel</h2>
               <p className="text-gray-300 text-lg mb-6">
                 Com mais de uma década de experiência, Gabriel (ou "Chefe") não
                 é apenas um barbeiro, é um artista. Especialista em cortes
